@@ -1,10 +1,7 @@
 import { createHash, randomBytes } from "node:crypto"
 import { createServer, type IncomingMessage, type Server } from "node:http"
 import { shell } from "electron"
-import type {
-  AuthProfile,
-  AuthSessionState,
-} from "../../shared/types/auth-profile"
+import type { AuthProfile } from "../../shared/types/auth-profile"
 import { DEMO_AUTH_PROFILE } from "../../shared/types/auth-profile"
 import { createAppError } from "../errors/core"
 import type { GoogleAuthPort } from "../ports/inbound"

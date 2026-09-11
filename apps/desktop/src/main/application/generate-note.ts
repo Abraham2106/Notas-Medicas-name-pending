@@ -8,7 +8,6 @@ import { verifySource } from "../notes/verify-source"
 import type { EncounterPort } from "../ports/inbound"
 import type {
   AudioCapturePort,
-  Clock,
   ProgressPort,
   StructuringPort,
   TranscriptionPort,
@@ -22,12 +21,7 @@ export type GenerateNoteWorkflowDeps = {
   encounters?: EncounterPort
   audio?: AudioCapturePort
   progress?: ProgressPort
-  clock?: Clock
   structureAttempts?: number
-}
-
-const systemClock: Clock = {
-  nowIso: () => new Date().toISOString(),
 }
 
 /** Defensive precondition: callers must pass a real encounter id. */
