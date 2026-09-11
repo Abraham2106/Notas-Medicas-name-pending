@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
@@ -24,9 +24,11 @@ describe("composeApplication", () => {
     dirs.push(audioTempDir)
     const audio = createAudioTempStore({ audioTempDir })
     const notesStore = createMemoryNoteStore()
+    const exportDir = join(audioTempDir, "exports")
     const app = composeApplication(createSilentIpcLogger(), {
       audio,
       notesStore,
+      exportDir,
       transcription: createTranscriptionFromStt(createFakeSttEngine()),
       structuring: createHeuristicStructuring(),
     })
@@ -48,9 +50,23 @@ describe("composeApplication", () => {
       note: generated.note,
     })
     const stored = await notesStore.get(saved.noteId)
+    expect(stored?.encounterId).toBe(started.encounterId)
     expect(stored?.label).toBe("hex")
     expect(stored?.transcript).toHaveLength(3)
     expect(stored?.note.sections.visit_context.presence).toBe("STATED")
+
+    await expect(
+      app.exportNote.exportNote({
+        encounterId: started.encounterId,
+        format: "txt",
+      }),
+    ).resolves.toEqual({ exported: true })
+    expect(
+      readFileSync(
+        join(exportDir, `${started.encounterId}.txt`),
+        "utf8",
+      ),
+    ).toContain("No consta en la consulta.")
   })
 
   it("keeps the mock inference adapter as the test default", async () => {

@@ -53,7 +53,9 @@ describe("ipc logging", () => {
 
   it("logs the typed code when a service refuses the work", async () => {
     const harness = createHarness()
-    const started = (await harness.invoke(IPC_CHANNELS.START_ENCOUNTER, {})) as {
+    const started = (await harness.invoke(IPC_CHANNELS.START_ENCOUNTER, {
+      label: SENTINEL,
+    })) as {
       data: { encounterId: string }
     }
     await harness.invoke(IPC_CHANNELS.EXPORT_NOTE, {
@@ -61,13 +63,14 @@ describe("ipc logging", () => {
       format: "txt",
     })
 
+    expect(harness.lines.join("\n")).not.toContain(SENTINEL)
     const last = JSON.parse(harness.lines.at(-1) as string) as Record<
       string,
       unknown
     >
     expect(last).toMatchObject({
       status: "error",
-      errorCode: "NOT_IMPLEMENTED",
+      errorCode: "EXPORT_FAILED",
     })
   })
 })

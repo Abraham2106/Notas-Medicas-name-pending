@@ -180,6 +180,7 @@ describe("createNotesService", () => {
     const generated = await notes.generate(encounterId)
     const saved = await notes.save({ encounterId, note: generated.note })
     const stored = await store.get(saved.noteId)
+    expect(stored?.encounterId).toBe(encounterId)
     expect(stored?.note).toEqual(generated.note)
     expect(stored?.transcript).toHaveLength(3)
   })

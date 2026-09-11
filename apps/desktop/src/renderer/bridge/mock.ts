@@ -1,11 +1,10 @@
 import {
-  SECTION_IDS,
-  SECTION_TITLES,
   type ClinicalNote,
   type FieldValue,
   type TranscriptSegment,
 } from "@oira/types"
 
+import { SYNTHETIC_TRANSCRIPT } from "../../shared/fixtures/synthetic-consult"
 import type { InferenceProgress } from "../../shared/types/inference-progress"
 import {
   defaultSettings,
@@ -49,27 +48,6 @@ function field(
   return { text, presence, sourceSegmentIds, reviewed: false }
 }
 
-const SYNTHETIC_TRANSCRIPT: TranscriptSegment[] = [
-  {
-    id: "seg-1",
-    speaker: "Médico",
-    startMs: 0,
-    text: "¿Qué le trae hoy? Cuénteme qué siente y desde cuándo.",
-  },
-  {
-    id: "seg-2",
-    speaker: "Paciente",
-    startMs: 4000,
-    text: "Dolor en la rodilla izquierda desde hace tres días, sin golpe ni caída. Me duele sobre todo al subir escaleras.",
-  },
-  {
-    id: "seg-3",
-    speaker: "Médico",
-    startMs: 12000,
-    text: "La reviso y, según lo que encuentre, coordinamos estudios.",
-  },
-]
-
 function syntheticNote(): ClinicalNote {
   return {
     sections: {
@@ -98,19 +76,6 @@ function syntheticNote(): ClinicalNote {
       follow_up: field("", "NOT_STATED"),
     },
   }
-}
-
-export function formatNoteAsText(note: ClinicalNote): string {
-  return SECTION_IDS.map((id) => {
-    const section = note.sections[id]
-    const body =
-      section.presence === "NOT_STATED"
-        ? "No consta en la consulta."
-        : section.presence === "UNKNOWN"
-          ? "Sin determinar."
-          : section.text
-    return `${SECTION_TITLES[id]}\n${body}`
-  }).join("\n\n")
 }
 
 export function createMockBridge(): DemoBridge {
@@ -173,3 +138,4 @@ export function createMockBridge(): DemoBridge {
 }
 
 export { SYNTHETIC_TRANSCRIPT, syntheticNote }
+export { formatNoteAsText } from "../../shared/clinical-export"

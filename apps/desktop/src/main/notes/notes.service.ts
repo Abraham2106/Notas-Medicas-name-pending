@@ -1,11 +1,10 @@
-import type { ClinicalNote } from "@oira/types"
 import type { InferenceProgress } from "../../shared/types/inference-progress"
-import {
-  SYNTHETIC_TRANSCRIPT,
-  syntheticClinicalNote,
-} from "../../shared/fixtures/synthetic-consult"
 import { runGenerateNote } from "../application/generate-note"
 import { encounterNotFoundError } from "../errors/encounters"
+import {
+  noteGenerationNotImplementedError,
+  noteSaveNotImplementedError,
+} from "../errors/notes"
 import type { EncounterRepository } from "../encounters/encounter.repository"
 import { canTransition } from "../encounters/encounter.state"
 import type { StructuringPort, TranscriptionPort } from "../inference/port"
@@ -35,28 +34,13 @@ const systemClock: Clock = {
   nowIso: () => new Date().toISOString(),
 }
 
-export function createNotesStub(deps: NotesServiceDeps = {}): NotesPort {
-  const saved = new Map<string, ClinicalNote>()
-  const createId = deps.createId ?? (() => crypto.randomUUID())
-
+export function createNotesStub(_deps: NotesServiceDeps = {}): NotesPort {
   return {
-    async generate(encounterId) {
-      if (deps.encounters) {
-        const record = await deps.encounters.getById(encounterId)
-        if (!record) throw encounterNotFoundError()
-      }
-      return {
-        transcript: SYNTHETIC_TRANSCRIPT,
-        note: syntheticClinicalNote(),
-      }
+    async generate() {
+      throw noteGenerationNotImplementedError()
     },
-    async save(input) {
-      if (deps.encounters) {
-        const record = await deps.encounters.getById(input.encounterId)
-        if (!record) throw encounterNotFoundError()
-      }
-      saved.set(input.encounterId, input.note)
-      return { noteId: createId() }
+    async save() {
+      throw noteSaveNotImplementedError()
     },
   }
 }
@@ -83,6 +67,7 @@ export function createNotesService(deps: NotesPipelineDeps): NotesPort {
       if (deps.notes) {
         await deps.notes.save({
           id: noteId,
+          encounterId: input.encounterId,
           acceptedAt: clock.nowIso(),
           label: record?.label ?? "",
           visitType: record?.visitType ?? "",

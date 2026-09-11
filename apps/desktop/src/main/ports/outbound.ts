@@ -11,6 +11,20 @@ export type Clock = {
   nowIso: () => string
 }
 
+export type IpcLogPort = {
+  call: (entry: {
+    channel: string
+    status: "ok" | "error"
+    latencyMs: number
+    errorCode?: string
+  }) => void
+}
+
+export type FileWriterPort = {
+  writeFile: (path: string, contents: string) => Promise<void>
+  mkdir?: (dir: string) => Promise<void>
+}
+
 export type AudioCapturePort = {
   prepare: (encounterId: string) => void
   append: (encounterId: string, pcm: Buffer, sequence: number) => void

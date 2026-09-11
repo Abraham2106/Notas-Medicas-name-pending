@@ -7,15 +7,9 @@ import {
 } from "../errors/ipc"
 import { toSerializableError } from "../errors/core"
 import type { SessionPort } from "../auth"
+import type { IpcLogPort } from "../ports"
 
-export type IpcLogger = {
-  call: (entry: {
-    channel: string
-    status: "ok" | "error"
-    latencyMs: number
-    errorCode?: string
-  }) => void
-}
+export type IpcLogger = IpcLogPort
 
 export function createSilentIpcLogger(): IpcLogger {
   return { call() {} }

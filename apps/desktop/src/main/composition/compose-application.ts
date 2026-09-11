@@ -1,4 +1,4 @@
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { tmpdir } from "node:os"
 import type { InferenceProgress } from "../../shared/types/inference-progress"
 import {
@@ -22,14 +22,17 @@ import {
   createMemoryEncounterRepository,
   type EncounterPort,
 } from "../encounters"
-import { createExportStub, type ExportPort } from "../export"
+import {
+  createFileExportAdapter,
+  nodeFileWriter,
+  type ExportPort,
+} from "../export"
 import { createInferencePorts } from "../inference"
 import { createNotesService, type NotesPort } from "../notes"
-import type { IpcLogger } from "../ipc/withValidation"
-import { createSilentIpcLogger } from "../ipc/withValidation"
 import type {
   AudioCapturePort,
   ClipboardPort,
+  IpcLogPort,
   NoteStorePort,
   SettingsPort,
   StructuringPort,
@@ -44,7 +47,7 @@ export type ApplicationPorts = {
   exportNote: ExportPort
   session: SessionPort
   googleAuth?: GoogleAuthPort
-  logger: IpcLogger
+  logger: IpcLogPort
   audio: AudioCapturePort
   settings: SettingsPort
   clipboard: ClipboardPort
@@ -59,6 +62,7 @@ export type ComposeApplicationOptions = {
   clipboard?: ClipboardPort
   notesStore?: NoteStorePort
   notesFile?: string
+  exportDir?: string
   transcription?: TranscriptionPort
   structuring?: StructuringPort
   session?: SessionPort
@@ -87,7 +91,7 @@ function resolveNoteStore(options: ComposeApplicationOptions): NoteStorePort {
  * IPC must not compose dependencies; it only registers handlers.
  */
 export function composeApplication(
-  logger: IpcLogger = createSilentIpcLogger(),
+  logger: IpcLogPort = { call() {} },
   options: ComposeApplicationOptions = {},
 ): ApplicationPorts {
   const repository = createMemoryEncounterRepository()
@@ -103,6 +107,12 @@ export function composeApplication(
         process.env.OIRA_INFERENCE ?? process.env.NOTALOCAL_INFERENCE,
     }).inferenceAdapter
   const inference = createInferencePorts(inferenceAdapter)
+  const notesStore = resolveNoteStore(options)
+  const exportDir =
+    options.exportDir ??
+    (options.notesFile
+      ? dirname(options.notesFile)
+      : join(tmpdir(), "oira-exports"))
 
   return {
     encounters: createEncounterService({ repository, audio }),
@@ -110,11 +120,17 @@ export function composeApplication(
       encounters: repository,
       audio,
       onProgress: options.onProgress,
-      notes: resolveNoteStore(options),
+      notes: notesStore,
       transcription: options.transcription ?? inference.transcription,
       structuring: options.structuring ?? inference.structuring,
     }),
-    exportNote: options.exportNote ?? createExportStub(),
+    exportNote:
+      options.exportNote ??
+      createFileExportAdapter({
+        notes: notesStore,
+        writer: nodeFileWriter,
+        exportDir,
+      }),
     session: options.session ?? createAuthStub(),
     googleAuth: options.googleAuth ?? createGoogleAuthPortFromEnv(process.env),
     logger,

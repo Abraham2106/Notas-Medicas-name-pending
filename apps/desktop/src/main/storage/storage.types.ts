@@ -2,6 +2,7 @@ import type { ClinicalNote, TranscriptSegment } from "@oira/types"
 
 export type StoredNoteRecord = {
   id: string
+  encounterId: string
   acceptedAt: string
   label: string
   visitType: string
