@@ -1,16 +1,15 @@
 import { clinicalNoteSchema } from "../../shared/schemas/clinical.schema"
-import type { InferenceProgress } from "../../shared/types/inference-progress"
 import type { GenerateNoteResult } from "../../shared/types/oira-api"
 import { audioCaptureFailedError } from "../errors/audio"
 import { isAppError } from "../errors/core"
 import { encounterNotFoundError } from "../errors/encounters"
 import { invalidStructuredOutputError } from "../errors/notes"
-import type { EncounterRepository } from "../encounters/encounter.repository"
-import { canTransition } from "../encounters/encounter.state"
 import { verifySource } from "../notes/verify-source"
+import type { EncounterPort } from "../ports/inbound"
 import type {
   AudioCapturePort,
   Clock,
+  ProgressPort,
   StructuringPort,
   TranscriptionPort,
 } from "../ports/outbound"
@@ -20,9 +19,9 @@ export const DEFAULT_STRUCTURE_ATTEMPTS = 2
 export type GenerateNoteWorkflowDeps = {
   transcription: TranscriptionPort
   structuring: StructuringPort
-  encounters?: EncounterRepository
+  encounters?: EncounterPort
   audio?: AudioCapturePort
-  onProgress?: (event: InferenceProgress) => void
+  progress?: ProgressPort
   clock?: Clock
   structureAttempts?: number
 }
@@ -39,35 +38,27 @@ export function assertEncounterId(encounterId: string): void {
 }
 
 async function advanceEncounter(
-  repository: EncounterRepository | undefined,
+  encounters: EncounterPort | undefined,
   encounterId: string,
   to: "transcribed" | "failed",
-  clock: Clock,
 ): Promise<void> {
-  if (!repository) return
+  if (!encounters) return
   try {
-    const record = await repository.getById(encounterId)
-    if (!record || !canTransition(record.status, to)) return
-    await repository.update({
-      ...record,
-      status: to,
-      updatedAt: clock.nowIso(),
-    })
+    await encounters.advance(encounterId, to)
   } catch {
     // Bookkeeping must never mask the pipeline result.
   }
 }
 
 /**
- * In-process note pipeline (Temporal-style workflow without a cluster):
- * orchestrates transcribe → structure → verify. I/O lives in port adapters.
+ * In-process note pipeline: transcribe → structure → verify.
+ * I/O lives in port adapters.
  */
 export async function runGenerateNote(
   encounterId: string,
   deps: GenerateNoteWorkflowDeps,
 ): Promise<GenerateNoteResult> {
   assertEncounterId(encounterId)
-  const clock = deps.clock ?? systemClock
   const attempts = deps.structureAttempts ?? DEFAULT_STRUCTURE_ATTEMPTS
 
   if (deps.encounters) {
@@ -75,7 +66,7 @@ export async function runGenerateNote(
     if (!record) throw encounterNotFoundError()
   }
 
-  deps.onProgress?.({ encounterId, phase: "transcribing" })
+  deps.progress?.emit({ encounterId, phase: "transcribing" })
   try {
     const filePath = deps.audio ? deps.audio.wavPath(encounterId) : undefined
     if (deps.audio && !filePath) throw audioCaptureFailedError()
@@ -83,7 +74,7 @@ export async function runGenerateNote(
       filePath: filePath ?? "",
     })
 
-    deps.onProgress?.({ encounterId, phase: "structuring" })
+    deps.progress?.emit({ encounterId, phase: "structuring" })
     let lastError: unknown
     for (let attempt = 0; attempt < attempts; attempt++) {
       try {
@@ -95,7 +86,7 @@ export async function runGenerateNote(
         if (!verifySource(parsed.data, segments)) {
           throw invalidStructuredOutputError()
         }
-        await advanceEncounter(deps.encounters, encounterId, "transcribed", clock)
+        await advanceEncounter(deps.encounters, encounterId, "transcribed")
         return { transcript: segments, note: parsed.data }
       } catch (error) {
         lastError = error
@@ -106,8 +97,8 @@ export async function runGenerateNote(
     }
     throw lastError
   } catch (error) {
-    await advanceEncounter(deps.encounters, encounterId, "failed", clock)
-    deps.onProgress?.({ encounterId, phase: "failed" })
+    await advanceEncounter(deps.encounters, encounterId, "failed")
+    deps.progress?.emit({ encounterId, phase: "failed" })
     throw error
   } finally {
     deps.audio?.purge(encounterId)

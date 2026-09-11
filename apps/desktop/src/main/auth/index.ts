@@ -1,4 +1,4 @@
-export { createAuthStub } from "./auth.service"
+export { createAuthStub, createAuthenticatedSession, createGoogleLinkedSession } from "./auth.service"
 export type { SessionPort } from "./auth.service"
 export {
   createDemoGoogleAuthPort,

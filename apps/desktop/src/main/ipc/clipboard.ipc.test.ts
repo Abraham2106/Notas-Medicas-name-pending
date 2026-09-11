@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 import { IPC_CHANNELS } from "../../shared/constants/ipc-channels"
-import { createAuthStub, type SessionPort } from "../auth"
+import { createAuthenticatedSession, createAuthStub, type SessionPort } from "../auth"
 import { createSilentIpcLogger } from "./index"
 import { registerClipboardIpc, type ClipboardPort } from "./clipboard.ipc"
 
@@ -18,7 +18,7 @@ function createMemoryIpc() {
   }
 }
 
-const session: SessionPort = createAuthStub()
+const session: SessionPort = createAuthenticatedSession()
 
 describe("registerClipboardIpc", () => {
   it("writes the text through the clipboard port", async () => {
@@ -54,6 +54,24 @@ describe("registerClipboardIpc", () => {
 
     expect(result.ok).toBe(false)
     expect(result.error?.code).toBe("INVALID_INPUT")
+    expect(clipboard.writeText).not.toHaveBeenCalled()
+  })
+
+  it("rejects writes when the session is not authenticated", async () => {
+    const ipc = createMemoryIpc()
+    const clipboard: ClipboardPort = { writeText: vi.fn() }
+    registerClipboardIpc(ipc.handle, {
+      clipboard,
+      session: createAuthStub(),
+      logger: createSilentIpcLogger(),
+    })
+
+    const result = (await ipc.invoke(IPC_CHANNELS.CLIPBOARD_WRITE, {
+      text: "Nota clínica",
+    })) as { ok: boolean; error?: { code: string } }
+
+    expect(result.ok).toBe(false)
+    expect(result.error?.code).toBe("NOT_AUTHENTICATED")
     expect(clipboard.writeText).not.toHaveBeenCalled()
   })
 })

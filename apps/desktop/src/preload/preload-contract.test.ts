@@ -30,13 +30,14 @@ describe("preload wiring", () => {
       "appendAudio",
       "generateNote",
       "saveNote",
+      "exportNote",
       "onInferenceProgress",
     ]) {
       expect(preload).toContain(method)
     }
+    expect(preload).toContain("IPC_CHANNELS.EXPORT_NOTE")
     expect(preload).not.toMatch(/invoke\(\s*channel/)
     expect(preload).not.toContain("AUTH_UNLOCK")
-    expect(preload).not.toContain("EXPORT_NOTE")
     expect(preload).not.toMatch(/filePath|wavPath|userData/)
   })
 })

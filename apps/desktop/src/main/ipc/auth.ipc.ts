@@ -60,6 +60,7 @@ export function registerAuthIpc(
     withValidation({
       channel: IPC_CHANNELS.AUTH_SIGN_OUT,
       schema: signOutInputSchema,
+      requiresSession: true,
       session: deps.session,
       logger: deps.logger,
       run: async () => {

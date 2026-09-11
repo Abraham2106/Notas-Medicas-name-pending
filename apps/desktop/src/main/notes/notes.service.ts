@@ -1,20 +1,23 @@
-import type { InferenceProgress } from "../../shared/types/inference-progress"
 import { runGenerateNote } from "../application/generate-note"
 import { encounterNotFoundError } from "../errors/encounters"
 import {
   noteGenerationNotImplementedError,
   noteSaveNotImplementedError,
 } from "../errors/notes"
-import type { EncounterRepository } from "../encounters/encounter.repository"
-import { canTransition } from "../encounters/encounter.state"
-import type { StructuringPort, TranscriptionPort } from "../inference/port"
-import type { NotesPort } from "../ports/inbound"
-import type { AudioCapturePort, Clock, NoteStorePort } from "../ports/outbound"
+import type { EncounterPort, NotesPort } from "../ports/inbound"
+import type {
+  AudioCapturePort,
+  Clock,
+  NoteStorePort,
+  ProgressPort,
+  StructuringPort,
+  TranscriptionPort,
+} from "../ports/outbound"
 
 export type { NotesPort }
 
 export type NotesServiceDeps = {
-  encounters?: EncounterRepository
+  encounters?: EncounterPort
   createId?: () => string
 }
 
@@ -22,7 +25,7 @@ export type NotesPipelineDeps = NotesServiceDeps & {
   transcription: TranscriptionPort
   structuring: StructuringPort
   audio?: AudioCapturePort
-  onProgress?: (event: InferenceProgress) => void
+  progress?: ProgressPort
   notes?: NoteStorePort
   clock?: Clock
   structureAttempts?: number
@@ -79,34 +82,20 @@ export function createNotesService(deps: NotesPipelineDeps): NotesPort {
         transcript: draft?.transcript ?? [],
         note: input.note,
       })
-      await settleDrafted(deps.encounters, input.encounterId, clock)
+      await settleDrafted(deps.encounters, input.encounterId)
       return { noteId }
     },
   }
 }
 
 async function settleDrafted(
-  repository: EncounterRepository | undefined,
+  encounters: EncounterPort | undefined,
   encounterId: string,
-  clock: Clock,
 ): Promise<void> {
-  if (!repository) return
+  if (!encounters) return
   try {
-    let record = await repository.getById(encounterId)
-    if (!record || !canTransition(record.status, "drafting")) return
-    await repository.update({
-      ...record,
-      status: "drafting",
-      updatedAt: clock.nowIso(),
-    })
-    record = await repository.getById(encounterId)
-    if (record && canTransition(record.status, "drafted")) {
-      await repository.update({
-        ...record,
-        status: "drafted",
-        updatedAt: clock.nowIso(),
-      })
-    }
+    await encounters.advance(encounterId, "drafting")
+    await encounters.advance(encounterId, "drafted")
   } catch {
     // Bookkeeping must never mask the pipeline result.
   }

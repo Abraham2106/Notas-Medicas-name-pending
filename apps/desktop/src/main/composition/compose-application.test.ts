@@ -81,4 +81,9 @@ describe("composeApplication", () => {
     const generated = await app.notes.generate(started.encounterId)
     expect(generated.transcript).toHaveLength(3)
   })
+
+  it("authenticates clinical IPC by default under test", () => {
+    const app = composeApplication(createSilentIpcLogger())
+    expect(app.session.isAuthenticated()).toBe(true)
+  })
 })

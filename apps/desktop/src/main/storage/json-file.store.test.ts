@@ -146,9 +146,14 @@ describe("main/storage/json-file.store", () => {
     const mem = makeMemFs(new Map([[STORE_PATH, "{not valid json"]]))
     const store = createJsonFileStore(STORE_PATH, mem.deps, {
       onLog: (action) => actions.push(action),
+      now: () => 1_700_000_000_000,
     })
 
     expect(await store.list()).toEqual([])
+    expect(mem.files.get(STORE_PATH)).toBeUndefined()
+    expect(mem.files.get(`${STORE_PATH}.corrupt-1700000000000`)).toBe(
+      "{not valid json",
+    )
 
     const record = makeRecord("enc-1", CLINICAL_TEXT)
     await store.save(record)
@@ -156,6 +161,36 @@ describe("main/storage/json-file.store", () => {
     const reread = createJsonFileStore(STORE_PATH, mem.deps)
     expect(await reread.get("enc-1")).toEqual(record)
     expect(actions).toContain("storage.load_corrupt_reset")
+  })
+
+  it("quarantines records that only have an id", async () => {
+    const mem = makeMemFs(
+      new Map([
+        [
+          STORE_PATH,
+          JSON.stringify({ version: 1, records: [{ id: "enc-1" }] }),
+        ],
+      ]),
+    )
+    const store = createJsonFileStore(STORE_PATH, mem.deps, { now: () => 42 })
+    expect(await store.list()).toEqual([])
+    expect(mem.files.has(`${STORE_PATH}.corrupt-42`)).toBe(true)
+  })
+
+  it("fails closed when an existing file cannot be read", async () => {
+    const mem = makeMemFs(new Map([[STORE_PATH, "{}"]]))
+    const failingDeps: JsonFileFsDeps = {
+      ...mem.deps,
+      async readFile() {
+        throw new Error("EACCES: simulated read failure")
+      },
+    }
+    const store = createJsonFileStore(STORE_PATH, failingDeps)
+    await expect(store.list()).rejects.toMatchObject({
+      name: "OiraAppError",
+      code: "DATABASE_ERROR",
+    })
+    expect(mem.files.get(STORE_PATH)).toBe("{}")
   })
 
   it("logs action names only and never payload content", async () => {

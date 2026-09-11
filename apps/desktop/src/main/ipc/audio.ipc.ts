@@ -13,6 +13,7 @@ export function registerAudioIpc(
     withValidation({
       channel: IPC_CHANNELS.APPEND_AUDIO,
       schema: appendAudioInputSchema,
+      requiresSession: true,
       session: deps.session,
       logger: deps.logger,
       run: async (input) => {

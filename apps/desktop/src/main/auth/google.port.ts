@@ -7,18 +7,9 @@ import type {
 } from "../../shared/types/auth-profile"
 import { DEMO_AUTH_PROFILE } from "../../shared/types/auth-profile"
 import { createAppError } from "../errors/core"
+import type { GoogleAuthPort } from "../ports/inbound"
 
-/**
- * Google identity port for Login/Signup.
- * Production flow: OAuth 2.0 + PKCE (S256) via the system browser and a
- * loopback redirect (http://127.0.0.1:<ephemeral>/callback). Requires a
- * "Desktop app" OAuth client; only the Client ID is needed, never a secret.
- */
-export type GoogleAuthPort = {
-  signIn: () => Promise<AuthProfile>
-  signOut: () => Promise<{ signedOut: true }>
-  session: () => AuthSessionState
-}
+export type { GoogleAuthPort }
 
 const AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"

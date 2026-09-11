@@ -82,5 +82,21 @@ export function createEncounterService(
       audio?.finalize(encounterId)
       return { status: next.status }
     },
+
+    async getById(id) {
+      return repository.getById(id)
+    },
+
+    async advance(id, to) {
+      const current = await repository.getById(id)
+      if (!current) notFound()
+      assertTransition(current.status, to)
+      await repository.update({
+        ...current,
+        status: to,
+        updatedAt: clock.nowIso(),
+        ...(to === "completed" ? { completedAt: clock.nowIso() } : {}),
+      })
+    },
   }
 }

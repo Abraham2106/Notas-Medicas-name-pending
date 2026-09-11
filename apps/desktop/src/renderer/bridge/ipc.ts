@@ -32,6 +32,9 @@ export function adaptOiraApi(api: OiraApi): DemoBridge {
     async saveNote(encounterId, note: ClinicalNote) {
       await unwrap(api.saveNote({ encounterId, note }))
     },
+    async exportNote(encounterId, format = "txt") {
+      await unwrap(api.exportNote({ encounterId, format }))
+    },
     async writeClipboard(text: string) {
       await unwrap(api.writeClipboard({ text }))
     },

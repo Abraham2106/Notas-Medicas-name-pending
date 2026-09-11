@@ -1,7 +1,15 @@
 import * as fsp from "node:fs/promises"
 import path from "node:path"
+import { z } from "zod"
 
-import { databaseWriteFailedError } from "../errors/storage"
+import {
+  clinicalNoteSchema,
+  transcriptSegmentSchema,
+} from "../../shared/schemas/clinical.schema"
+import {
+  databaseReadFailedError,
+  databaseWriteFailedError,
+} from "../errors/storage"
 import type {
   JsonFileFsDeps,
   NoteStorePort,
@@ -13,6 +21,25 @@ const FILE_VERSION = 1
 const LOG_SAVE = "storage.save"
 const LOG_REMOVE = "storage.remove"
 const LOG_CORRUPT_RESET = "storage.load_corrupt_reset"
+
+const storedNoteRecordSchema = z
+  .object({
+    id: z.string().min(1),
+    encounterId: z.string().min(1),
+    acceptedAt: z.string().min(1),
+    label: z.string(),
+    visitType: z.string(),
+    note: clinicalNoteSchema,
+    transcript: z.array(transcriptSegmentSchema),
+  })
+  .strict()
+
+const storeFileSchema = z
+  .object({
+    version: z.literal(FILE_VERSION),
+    records: z.array(storedNoteRecordSchema),
+  })
+  .strict()
 
 type StoreFile = { version: number; records: StoredNoteRecord[] }
 
@@ -39,11 +66,6 @@ export const defaultJsonFileFsDeps: JsonFileFsDeps = {
   },
 }
 
-function isStoredNoteRecord(value: unknown): value is StoredNoteRecord {
-  if (typeof value !== "object" || value === null) return false
-  return typeof (value as { id?: unknown }).id === "string"
-}
-
 function parseStoreFile(raw: string): StoredNoteRecord[] | null {
   let parsed: unknown
   try {
@@ -51,13 +73,9 @@ function parseStoreFile(raw: string): StoredNoteRecord[] | null {
   } catch {
     return null
   }
-  if (typeof parsed !== "object" || parsed === null) return null
-  const candidate = parsed as { version?: unknown; records?: unknown }
-  if (candidate.version !== FILE_VERSION || !Array.isArray(candidate.records)) {
-    return null
-  }
-  if (!candidate.records.every(isStoredNoteRecord)) return null
-  return candidate.records as StoredNoteRecord[]
+  const result = storeFileSchema.safeParse(parsed)
+  if (!result.success) return null
+  return result.data.records
 }
 
 function serialize(records: readonly StoredNoteRecord[]): string {
@@ -67,6 +85,7 @@ function serialize(records: readonly StoredNoteRecord[]): string {
 
 export type CreateJsonFileStoreOptions = {
   onLog?: StorageLogHook
+  now?: () => number
 }
 
 export function createJsonFileStore(
@@ -76,28 +95,40 @@ export function createJsonFileStore(
 ): NoteStorePort {
   let cache: StoredNoteRecord[] | null = null
   let queue: Promise<unknown> = Promise.resolve()
+  const now = options.now ?? Date.now
 
   const log = (action: string): void => {
     options.onLog?.(action)
   }
 
+  async function quarantineCorrupt(): Promise<void> {
+    log(LOG_CORRUPT_RESET)
+    const quarantinePath = `${filePath}.corrupt-${now()}`
+    try {
+      await fsDeps.rename(filePath, quarantinePath)
+    } catch (error) {
+      throw databaseReadFailedError(error)
+    }
+  }
+
   async function loadRecords(): Promise<StoredNoteRecord[]> {
     if (cache !== null) return cache
-    let raw = ""
-    if (await fsDeps.exists(filePath)) {
-      try {
-        raw = await fsDeps.readFile(filePath)
-      } catch {
-        raw = ""
-      }
-    }
-    if (raw === "") {
+    const exists = await fsDeps.exists(filePath)
+    if (!exists) {
       cache = []
       return cache
     }
+
+    let raw: string
+    try {
+      raw = await fsDeps.readFile(filePath)
+    } catch (error) {
+      throw databaseReadFailedError(error)
+    }
+
     const parsed = parseStoreFile(raw)
     if (parsed === null) {
-      log(LOG_CORRUPT_RESET)
+      await quarantineCorrupt()
       cache = []
       return cache
     }
@@ -144,9 +175,7 @@ export function createJsonFileStore(
 
     get(id) {
       return enqueue(async () => {
-        const found = (await loadRecords()).find(
-          (record) => record.id === id,
-        )
+        const found = (await loadRecords()).find((record) => record.id === id)
         return found ? structuredClone(found) : null
       })
     },

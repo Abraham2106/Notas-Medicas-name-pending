@@ -1,13 +1,10 @@
-import type { ExportNoteInput } from "../../shared/schemas/ipc.schema"
 import { exportNotImplementedError } from "../errors/export"
+import type { ExportPort } from "../ports/inbound"
 
-export type ExportPort = {
-  exportNote: (input: ExportNoteInput) => Promise<{ exported: true }>
-}
+export type { ExportPort }
 
 /**
- * Honest stub until I10 writes TXT/JSON locally.
- * Never returns { exported: true } without a side effect.
+ * Honest stub. Never returns { exported: true } without a side effect.
  */
 export function createExportStub(): ExportPort {
   return {

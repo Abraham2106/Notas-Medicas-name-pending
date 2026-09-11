@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 import { IPC_CHANNELS } from "../../shared/constants/ipc-channels"
 import type { InferenceProgress } from "../../shared/types/inference-progress"
+import { createAuthStub } from "../auth"
 import { createAudioTempStore } from "../audio"
 import {
   createSilentIpcLogger,
@@ -184,5 +185,32 @@ describe("I04 registerIpc", () => {
       ok: false,
       error: expect.objectContaining({ code: "AUDIO_CAPTURE_FAILED" }),
     })
+  })
+
+  it("rejects clinical channels when the session is not authenticated", async () => {
+    const ipc = createMemoryIpc()
+    registerIpc(
+      ipc.handle,
+      createStubIpcDeps(createSilentIpcLogger(), {
+        session: createAuthStub(),
+      }),
+    )
+
+    const result = (await ipc.invoke(IPC_CHANNELS.START_ENCOUNTER, {})) as {
+      ok: boolean
+      error?: { code: string }
+    }
+
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "NOT_AUTHENTICATED" }),
+    })
+
+    const session = (await ipc.invoke(IPC_CHANNELS.AUTH_SESSION_GET, {})) as {
+      ok: boolean
+      data?: { authenticated: boolean }
+    }
+    expect(session.ok).toBe(true)
+    expect(session.data?.authenticated).toBe(false)
   })
 })

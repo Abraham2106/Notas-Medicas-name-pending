@@ -7,9 +7,9 @@ export function invalidInputError(
   return createAppError("INVALID_INPUT", message, { retryable: false })
 }
 
-/** Channel requires an unlocked session. */
+/** Channel requires an authenticated session. */
 export function notAuthenticatedError(
-  message = "Unlock the app to continue.",
+  message = "Sign in to continue.",
 ): AppError {
   return createAppError("NOT_AUTHENTICATED", message, { retryable: false })
 }
