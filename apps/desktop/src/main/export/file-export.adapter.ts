@@ -1,13 +1,12 @@
 import * as fsp from "node:fs/promises"
-import { join } from "node:path"
 
 import {
   formatNoteAsJson,
   formatNoteAsText,
 } from "../../shared/clinical-export"
 import type { ExportNoteInput } from "../../shared/schemas/ipc.schema"
-import { encounterNotFoundError } from "../errors/encounters"
-import { exportFailedError } from "../errors/export"
+import { exportFailedError, invalidExportInputError } from "../errors/export"
+import { safeJoin } from "../audio/safe-path"
 import type {
   Clock,
   FileWriterPort,
@@ -25,6 +24,9 @@ export type FileExportAdapterDeps = {
 const systemClock: Clock = {
   nowIso: () => new Date().toISOString(),
 }
+
+const ENCOUNTER_ID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export const nodeFileWriter: FileWriterPort = {
   async mkdir(dir) {
@@ -81,9 +83,9 @@ export function createFileExportAdapter(
     async exportNote(input) {
       if (
         typeof input.encounterId !== "string" ||
-        input.encounterId.trim() === ""
+        !ENCOUNTER_ID.test(input.encounterId)
       ) {
-        throw encounterNotFoundError()
+        throw invalidExportInputError()
       }
 
       const record = (await deps.notes.list()).find(
@@ -96,7 +98,7 @@ export function createFileExportAdapter(
         )
       }
 
-      const path = join(deps.exportDir, `${input.encounterId}.${input.format}`)
+      const path = safeJoin(deps.exportDir, `${input.encounterId}.${input.format}`)
       const contents = renderExport(input, record, clock)
       try {
         await deps.writer.mkdir?.(deps.exportDir)

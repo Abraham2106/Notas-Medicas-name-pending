@@ -65,6 +65,20 @@ describe("file export adapter", () => {
     })
   })
 
+  it("rejects path-like encounter ids before touching the writer", async () => {
+    const writer = createMemoryFileWriter()
+    const port = createFileExportAdapter({
+      notes: createMemoryNoteStore(),
+      writer,
+      exportDir: EXPORT_DIR,
+    })
+
+    await expect(
+      port.exportNote({ encounterId: "../secret", format: "txt" }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" })
+    expect(writer.files.size).toBe(0)
+  })
+
   it("fails when no accepted note belongs to the encounter", async () => {
     const port = createFileExportAdapter({
       notes: createMemoryNoteStore(),

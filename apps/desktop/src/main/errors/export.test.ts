@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { exportFailedError, exportNotImplementedError } from "./export"
+import { exportFailedError, exportNotImplementedError, invalidExportInputError } from "./export"
 import { createExportStub } from "../export/export.service"
 
 describe("errors/export", () => {
   it("separates not-implemented from real export failures", () => {
     expect(exportNotImplementedError().code).toBe("NOT_IMPLEMENTED")
     expect(exportFailedError(new Error("ENOSPC")).code).toBe("EXPORT_FAILED")
+    expect(invalidExportInputError().code).toBe("INVALID_INPUT")
   })
 
   it("export stub never claims success", async () => {
