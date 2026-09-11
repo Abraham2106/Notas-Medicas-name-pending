@@ -67,6 +67,7 @@ function makeNote(text: string): ClinicalNote {
 function makeRecord(id: string, text: string): StoredNoteRecord {
   return {
     id,
+    encounterId: id,
     acceptedAt: "2026-08-22T10:00:00.000Z",
     label: `Consulta ${id}`,
     visitType: "Control",

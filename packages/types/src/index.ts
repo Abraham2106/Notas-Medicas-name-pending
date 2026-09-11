@@ -76,6 +76,7 @@ export type ClinicalNote = {
   sections: Record<SectionId, FieldValue>
 }
 
+/** UI view-model. The IPC contract is `OiraApi` in `apps/desktop/src/shared/types/oira-api.ts`. */
 export type Encounter = {
   id: string
   startedAt: string
@@ -84,8 +85,3 @@ export type Encounter = {
   transcript: TranscriptSegment[]
   note: ClinicalNote | null
 }
-
-/**
- * UI view-model only. The IPC API lives in
- * `apps/desktop/src/shared/types/notalocal-api.ts` (`NotaLocalAPI`).
- */

@@ -14,6 +14,7 @@ import {
   createMemoryEncounterRepository,
 } from "../encounters"
 import type { EncounterRepository } from "../encounters/encounter.repository"
+import { createMemoryNoteStore } from "../storage/memory.store"
 import type { InferenceProgress } from "../../shared/types/inference-progress"
 
 const ENCOUNTER = "00000000-0000-4000-8000-000000000001"
@@ -165,5 +166,22 @@ describe("createNotesService", () => {
     expect((await repository.getById(encounterId))?.status).toBe("transcribed")
     await notes.save({ encounterId, note: generated.note })
     expect((await repository.getById(encounterId))?.status).toBe("drafted")
+  })
+
+  it("persists the accepted note through NoteStorePort", async () => {
+    const { repository, encounterId } = await recordingEncounter()
+    const store = createMemoryNoteStore()
+    const notes = createNotesService({
+      transcription: createMockTranscription(),
+      structuring: createMockStructuring(),
+      encounters: repository,
+      notes: store,
+    })
+    const generated = await notes.generate(encounterId)
+    const saved = await notes.save({ encounterId, note: generated.note })
+    const stored = await store.get(saved.noteId)
+    expect(stored?.encounterId).toBe(encounterId)
+    expect(stored?.note).toEqual(generated.note)
+    expect(stored?.transcript).toHaveLength(3)
   })
 })

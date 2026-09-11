@@ -18,7 +18,7 @@ Canonical setup and scripts live in the root `README.md` and root `package.json`
 ## Architecture facts
 
 - Renderer reaches the rest of the system ONLY via `src/renderer/bridge/`. `getBridge()` returns the real `window.oira` adapter when preload exposed it, otherwise the mock bridge. Mock delays (~1.6s simulated transcribe/structure) live in `src/renderer/state/useEncounter.ts`, not in the mock bridge itself.
-- Main process registers IPC handlers with stub deps (`createStubIpcDeps` in `src/main/ipc/index.ts`): in-memory encounter repository plus notes/export/auth stubs. No SQLite or QVAC inference exists yet despite docs describing them.
+- Main process composes adapters in `src/main/composition` (`composeApplication`) and registers IPC as a driving adapter (`registerIpc` in `src/main/ipc/index.ts`). Domain ports live in `src/main/ports`. In-memory encounter repository plus notes/export/auth stubs remain the default adapters. No SQLite or QVAC inference exists yet despite docs describing them.
 - IPC channel names live in `src/shared/constants/ipc-channels.ts`; payloads are zod-validated in `src/shared/schemas/`. The renderer view-model types differ deliberately from the wire API (`OiraApi` in `apps/desktop/src/shared/types/oira-api.ts`).
 - Sandboxed preloads cannot be ESM: preload must stay CJS built as `index.cjs` (see comment in `electron.vite.config.ts`; verified by a prior bug where `window.oira` stayed undefined).
 - The renderer state machine (`src/renderer/state/encounterMachine.ts`) throws on invalid transitions; extend `ProductState` transitions in `packages/types` first if adding states.

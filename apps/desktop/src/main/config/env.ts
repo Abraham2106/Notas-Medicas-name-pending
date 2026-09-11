@@ -30,7 +30,9 @@ export function resolveAppEnv(input: {
 }): AppEnv {
   const nodeEnv = normalizeNodeEnv(input.nodeEnv ?? process.env.NODE_ENV)
   const requested = normalizeInferenceAdapter(
-    input.inferenceAdapter ?? process.env.NOTALOCAL_INFERENCE,
+    input.inferenceAdapter ??
+      process.env.OIRA_INFERENCE ??
+      process.env.NOTALOCAL_INFERENCE,
   )
   return {
     nodeEnv,

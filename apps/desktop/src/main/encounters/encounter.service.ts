@@ -2,13 +2,12 @@ import {
   encounterAlreadyActiveError,
   encounterNotFoundError,
 } from "../errors/encounters"
+import type { AudioCapturePort, Clock } from "../ports/outbound"
 import { createMemoryEncounterRepository, type EncounterRepository } from "./encounter.repository"
 import { assertTransition } from "./encounter.state"
 import type { EncounterPort, EncounterRecord } from "./encounter.types"
 
-export type Clock = {
-  nowIso: () => string
-}
+export type { Clock }
 
 export const systemClock: Clock = {
   nowIso: () => new Date().toISOString(),
@@ -18,6 +17,7 @@ export type EncounterServiceDeps = {
   repository?: EncounterRepository
   clock?: Clock
   createId?: () => string
+  audio?: AudioCapturePort
 }
 
 function notFound(): never {
@@ -30,6 +30,7 @@ export function createEncounterService(
   const repository = deps.repository ?? createMemoryEncounterRepository()
   const clock = deps.clock ?? systemClock
   const createId = deps.createId ?? (() => crypto.randomUUID())
+  const audio = deps.audio
 
   return {
     async start(input = {}) {
@@ -61,6 +62,7 @@ export function createEncounterService(
         updatedAt: now,
       }
       await repository.update(recording)
+      audio?.prepare(recording.id)
       return { encounterId: recording.id, startedAt: now }
     },
 
@@ -77,6 +79,7 @@ export function createEncounterService(
         updatedAt: now,
       }
       await repository.update(next)
+      audio?.finalize(encounterId)
       return { status: next.status }
     },
   }

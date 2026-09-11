@@ -16,3 +16,4 @@ export {
   GLOSSARY,
   retrieveTerms,
 } from "./heuristic-assembler"
+export { createHeuristicStructuring } from "./heuristic-structuring"

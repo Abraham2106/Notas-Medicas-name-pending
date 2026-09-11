@@ -97,5 +97,5 @@ export function createAudioTempStore(options: {
 }
 
 export function defaultAudioTempDir(): string {
-  return path.join(os.tmpdir(), `notalocal-audio-${process.pid}`)
+  return path.join(os.tmpdir(), `oira-audio-${process.pid}`)
 }

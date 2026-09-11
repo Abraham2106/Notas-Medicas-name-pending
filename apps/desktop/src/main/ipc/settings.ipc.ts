@@ -3,16 +3,12 @@ import {
   getSettingsInputSchema,
   saveSettingsInputSchema,
 } from "../../shared/schemas/ipc.schema"
-import type { AppSettings } from "../../shared/schemas/settings.schema"
-import type { Language } from "../../shared/constants/language"
 import type { SessionPort } from "../auth"
+import type { SettingsPort } from "../ports/outbound"
 import { withValidation, type IpcLogger } from "./withValidation"
 import type { IpcHandle } from "./types"
 
-export type SettingsIpcPort = {
-  get: () => Promise<AppSettings>
-  save: (input: { uiLocale: Language }) => Promise<AppSettings>
-}
+export type SettingsIpcPort = SettingsPort
 
 export function registerSettingsIpc(
   handle: IpcHandle,

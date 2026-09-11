@@ -24,7 +24,8 @@ export function loadAppConfig(input: LoadAppConfigInput): AppConfig {
   const env = resolveAppEnv({
     isPackaged: input.isPackaged,
     nodeEnv: input.nodeEnv,
-    inferenceAdapter: process.env.NOTALOCAL_INFERENCE,
+    inferenceAdapter:
+      process.env.OIRA_INFERENCE ?? process.env.NOTALOCAL_INFERENCE,
   })
   const paths = resolveAppDirectories(input.userData, input.temp)
   assertAppDirectoriesWritable(paths)

@@ -20,3 +20,9 @@ export function exportFailedError(
     cause,
   })
 }
+
+export function invalidExportInputError(
+  message = "The export request was not valid.",
+): AppError {
+  return createAppError("INVALID_INPUT", message, { retryable: false })
+}

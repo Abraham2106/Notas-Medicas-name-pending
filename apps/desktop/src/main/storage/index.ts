@@ -8,6 +8,7 @@ export {
   defaultJsonFileFsDeps,
   type CreateJsonFileStoreOptions,
 } from "./json-file.store"
+export { createMemoryNoteStore } from "./memory.store"
 export type {
   JsonFileFsDeps,
   NoteStorePort,
