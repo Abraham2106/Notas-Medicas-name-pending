@@ -17,6 +17,10 @@ export type IpcLogger = {
   }) => void
 }
 
+export function createSilentIpcLogger(): IpcLogger {
+  return { call() {} }
+}
+
 function failedResult(
   error: ReturnType<typeof toAppError>,
 ): Result<never> {

@@ -1,12 +1,11 @@
 import { IPC_CHANNELS } from "./channels"
 import { clipboardWriteInputSchema } from "../../shared/schemas/ipc.schema"
 import type { SessionPort } from "../auth"
+import type { ClipboardPort } from "../ports/outbound"
 import { withValidation, type IpcLogger } from "./withValidation"
 import type { IpcHandle } from "./types"
 
-export type ClipboardPort = {
-  writeText: (text: string) => void
-}
+export type { ClipboardPort }
 
 export function registerClipboardIpc(
   handle: IpcHandle,

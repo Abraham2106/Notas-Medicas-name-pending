@@ -3,9 +3,9 @@ import { join } from "node:path"
 import { IPC_EVENTS } from "../shared/constants/ipc-channels"
 import { createAudioTempStore, defaultAudioTempDir } from "./audio"
 import { loadAppConfig, resolveAppEnv } from "./config"
+import { composeApplication } from "./composition"
 import {
   createIpcLogger,
-  createStubIpcDeps,
   registerIpc,
   type IpcHandle,
 } from "./ipc"
@@ -84,6 +84,7 @@ app.whenReady().then(() => {
   let audio = createAudioTempStore({ audioTempDir: defaultAudioTempDir() })
   let inferenceAdapter = env.inferenceAdapter
   let settingsFile = join(tmpdir(), "oira-dev-settings.json")
+  let notesFile: string | undefined
   try {
     const config = loadAppConfig({
       userData: app.getPath("userData"),
@@ -94,6 +95,7 @@ app.whenReady().then(() => {
     audio = createAudioTempStore({ audioTempDir: config.paths.audioTempDir })
     inferenceAdapter = config.env.inferenceAdapter
     settingsFile = config.paths.settingsFile
+    notesFile = join(config.paths.userData, "notes", "accepted-notes.json")
   } catch {
     // Prototype still opens if settings/paths fail; Justin owns persistence.
   }
@@ -101,10 +103,11 @@ app.whenReady().then(() => {
 
   registerIpc(
     bindIpcMain(),
-    createStubIpcDeps(createIpcLogger(logger), {
+    composeApplication(createIpcLogger(logger), {
       audio,
       inferenceAdapter,
       settingsFile,
+      notesFile,
       clipboard: { writeText: (text) => clipboard.writeText(text) },
       onProgress: (event) => {
         for (const window of BrowserWindow.getAllWindows()) {

@@ -5,7 +5,7 @@ export function modelNotReadyError(): AppError {
     "MODEL_NOT_READY",
     "Local inference is not available in this build.",
     {
-      hint: "Set NOTALOCAL_INFERENCE=mock to use fixtures. On-device Whisper is selected with qvac.",
+      hint: "Set OIRA_INFERENCE=mock (or NOTALOCAL_INFERENCE=mock) to use fixtures. On-device Whisper is selected with qvac.",
       retryable: false,
     },
   )

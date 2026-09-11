@@ -1,13 +1,13 @@
 import { IPC_CHANNELS } from "./channels"
 import { appendAudioInputSchema } from "../../shared/schemas/ipc.schema"
-import type { AudioTempStore } from "../audio"
+import type { AudioCapturePort } from "../ports/outbound"
 import type { SessionPort } from "../auth"
 import { withValidation, type IpcLogger } from "./withValidation"
 import type { IpcHandle } from "./types"
 
 export function registerAudioIpc(
   handle: IpcHandle,
-  deps: { audio: AudioTempStore; session: SessionPort; logger: IpcLogger },
+  deps: { audio: AudioCapturePort; session: SessionPort; logger: IpcLogger },
 ): void {
   handle(IPC_CHANNELS.APPEND_AUDIO, (_event, raw) =>
     withValidation({
