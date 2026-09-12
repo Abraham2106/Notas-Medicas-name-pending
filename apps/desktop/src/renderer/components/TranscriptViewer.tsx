@@ -20,16 +20,14 @@ export function TranscriptViewer({ segments, highlightedIds }: Props) {
 
   return (
     <div className="transcript-panel">
-      <label className="field">
-        {t("transcript.searchLabel")}
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={t("transcript.searchPlaceholder")}
-        />
-      </label>
-      <p className="muted">{t("transcript.plainNote")}</p>
+      <input
+        type="search"
+        className="transcript-search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder={t("transcript.searchPlaceholder")}
+        aria-label={t("transcript.searchLabel")}
+      />
       {visible.length === 0 ? (
         <p className="muted">{t("transcript.noMatches").replace("{query}", query)}</p>
       ) : (

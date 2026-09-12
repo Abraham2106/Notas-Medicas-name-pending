@@ -57,7 +57,6 @@ export function ReviewScreen({
         ) : (
           <StatusBadge tone="warn" icon="!" label={t("review.badgeDraft")} />
         )}
-        <p className="muted review-hint">{t("review.hint")}</p>
       </div>
       <div className="review-split">
         <Card title={t("review.draftCardTitle")}>

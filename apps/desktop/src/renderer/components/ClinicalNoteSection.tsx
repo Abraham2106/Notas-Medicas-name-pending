@@ -31,8 +31,20 @@ export function ClinicalNoteSection({
     <article className={active ? "section section-active" : "section"}>
       <header className="section-head">
         <h3>{t(`sections.${id}`)}</h3>
-        {value.presence === "NOT_STATED" ? <NotStatedBadge reason="not_stated" /> : null}
-        {value.presence === "UNKNOWN" ? <NotStatedBadge reason="unknown" /> : null}
+        <div className="section-head-meta">
+          {value.presence === "NOT_STATED" ? <NotStatedBadge reason="not_stated" /> : null}
+          {value.presence === "UNKNOWN" ? <NotStatedBadge reason="unknown" /> : null}
+          {readOnly ? null : (
+            <label className="check check-compact">
+              <input
+                type="checkbox"
+                checked={value.reviewed}
+                onChange={(event) => onToggleReviewed(event.target.checked)}
+              />
+              {t("section.reviewedLabel")}
+            </label>
+          )}
+        </div>
       </header>
       <textarea
         id={id}
@@ -40,7 +52,7 @@ export function ClinicalNoteSection({
         value={value.text}
         onChange={(event) => onChange(event.target.value)}
         onFocus={onFocusSection}
-        rows={4}
+        rows={3}
         aria-label={t(`sections.${id}`)}
       />
       <SourceEvidencePopover
@@ -48,16 +60,6 @@ export function ClinicalNoteSection({
         transcript={transcript}
         onJump={onJumpToSource}
       />
-      {!readOnly ? (
-        <label className="check check-compact">
-          <input
-            type="checkbox"
-            checked={value.reviewed}
-            onChange={(event) => onToggleReviewed(event.target.checked)}
-          />
-          {t("section.reviewedLabel")}
-        </label>
-      ) : null}
     </article>
   )
 }

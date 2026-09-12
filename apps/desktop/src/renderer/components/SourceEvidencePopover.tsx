@@ -12,7 +12,7 @@ export function SourceEvidencePopover({ sourceSegmentIds, transcript, onJump }: 
   const { t } = useI18n()
 
   if (sourceSegmentIds.length === 0) {
-    return <p className="muted">{t("evidence.noSource")}</p>
+    return null
   }
 
   const quotes = quotesForSources(transcript, sourceSegmentIds)
