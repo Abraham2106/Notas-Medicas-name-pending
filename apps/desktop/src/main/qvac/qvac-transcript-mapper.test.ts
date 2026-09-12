@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { mapSttSegments } from "./map-transcript"
+import { mapSttSegments } from "./qvac-transcript-mapper"
 
 describe("mapSttSegments", () => {
   it("assigns speaker null and ignores append until SDK semantics are confirmed", () => {

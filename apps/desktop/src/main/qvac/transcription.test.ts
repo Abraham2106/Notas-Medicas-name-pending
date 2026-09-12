@@ -30,7 +30,9 @@ function stubLoadModelOnce(
 describe("createQvacTranscription", () => {
   it("loadModel → transcribe → unloadModel → close", async () => {
     const sdk = await import("./sdk")
-    const port = createQvacTranscription()
+    const port = createQvacTranscription({
+      freeMemBytes: () => 2_000_000_000,
+    })
     const { segments } = await port.transcribe({ filePath: "C:/tmp/capture.wav" })
     expect(segments).toEqual([
       { id: "w1", speaker: null, startMs: 0, text: "Hola." },
@@ -57,6 +59,21 @@ describe("createQvacTranscription", () => {
     expect(sdk.loadModel).not.toHaveBeenCalled()
   })
 
+  it("fails with LOW_MEMORY without loading the model", async () => {
+    const sdk = await import("./sdk")
+    vi.mocked(sdk.loadModel).mockClear()
+    const port = createQvacTranscription({
+      freeMemBytes: () => 800 * 1024 * 1024 - 1,
+    })
+    await expect(
+      port.transcribe({ filePath: "C:/tmp/capture.wav" }),
+    ).rejects.toMatchObject({
+      code: "TRANSCRIPTION_FAILED",
+      message: "LOW_MEMORY",
+    })
+    expect(sdk.loadModel).not.toHaveBeenCalled()
+  })
+
   it("keeps loading past 120s while progress events keep arriving", async () => {
     vi.useFakeTimers()
     try {
@@ -76,7 +93,9 @@ describe("createQvacTranscription", () => {
           finishLoad = () => resolve("model-slow")
         })
       })
-      const port = createQvacTranscription()
+      const port = createQvacTranscription({
+        freeMemBytes: () => 2_000_000_000,
+      })
       const pending = port.transcribe({ filePath: "C:/tmp/capture.wav" })
       const done = expect(pending).resolves.toEqual({
         segments: [{ id: "w1", speaker: null, startMs: 0, text: "Hola." }],
@@ -100,7 +119,9 @@ describe("createQvacTranscription", () => {
     try {
       const sdk = await import("./sdk")
       stubLoadModelOnce(sdk, () => new Promise<string>(() => {}))
-      const port = createQvacTranscription()
+      const port = createQvacTranscription({
+        freeMemBytes: () => 2_000_000_000,
+      })
       const pending = port.transcribe({ filePath: "C:/tmp/capture.wav" })
       const assertion = expect(pending).rejects.toMatchObject({
         code: "TRANSCRIPTION_FAILED",
