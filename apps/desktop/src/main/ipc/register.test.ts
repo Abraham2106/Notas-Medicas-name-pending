@@ -45,6 +45,31 @@ afterEach(() => {
 })
 
 describe("I04 registerIpc", () => {
+  it("warms Whisper without creating a recording encounter", async () => {
+    const ipc = createMemoryIpc()
+    let warmCalls = 0
+    registerIpc(
+      ipc.handle,
+      createStubIpcDeps(createSilentIpcLogger(), {
+        inferenceRuntime: {
+          warmTranscription: async () => {
+            warmCalls += 1
+          },
+          handoffToStructuring: async () => undefined,
+          shutdown: async () => undefined,
+        },
+      }),
+    )
+
+    const result = (await ipc.invoke(IPC_CHANNELS.WARM_TRANSCRIPTION, {})) as {
+      ok: boolean
+      data?: { warmed: boolean }
+    }
+
+    expect(result).toEqual({ ok: true, data: { warmed: true } })
+    expect(warmCalls).toBe(1)
+  })
+
   it("startEncounter({}) returns a typed ok Result", async () => {
     const ipc = createMemoryIpc()
     registerIpc(ipc.handle, createStubIpcDeps())

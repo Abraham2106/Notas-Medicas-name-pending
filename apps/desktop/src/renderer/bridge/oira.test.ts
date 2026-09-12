@@ -4,6 +4,7 @@ import type { OiraApi } from "../../shared/types/oira-api"
 
 function stubApi(): OiraApi {
   return {
+    warmTranscription: async () => ({ ok: true, data: { warmed: true } }),
     startEncounter: async () => ({
       ok: true,
       data: {
@@ -50,6 +51,7 @@ function stubApi(): OiraApi {
       data: { authenticated: false, profile: null },
     }),
     onInferenceProgress: () => () => {},
+    onModelLifecycle: () => () => {},
   }
 }
 

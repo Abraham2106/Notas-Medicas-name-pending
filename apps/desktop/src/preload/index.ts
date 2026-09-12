@@ -4,9 +4,12 @@ import {
   IPC_EVENTS,
 } from "../shared/constants/ipc-channels"
 import type { InferenceProgress } from "../shared/types/inference-progress"
+import type { ModelLifecycleEvent } from "../shared/types/model-lifecycle"
 import type { OiraApi } from "../shared/types/oira-api"
 
 const oira: OiraApi = {
+  warmTranscription: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.WARM_TRANSCRIPTION, {}),
   startEncounter: (input = {}) =>
     ipcRenderer.invoke(IPC_CHANNELS.START_ENCOUNTER, input),
   stopEncounter: (input) =>
@@ -34,6 +37,11 @@ const oira: OiraApi = {
     return () => {
       ipcRenderer.removeListener(IPC_EVENTS.INFERENCE_PROGRESS, wrapped)
     }
+  },
+  onModelLifecycle: (listener) => {
+    const wrapped = (_event: unknown, payload: ModelLifecycleEvent) => listener(payload)
+    ipcRenderer.on(IPC_EVENTS.MODEL_LIFECYCLE, wrapped)
+    return () => ipcRenderer.removeListener(IPC_EVENTS.MODEL_LIFECYCLE, wrapped)
   },
 }
 

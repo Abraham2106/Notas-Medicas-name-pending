@@ -1,6 +1,7 @@
 import { dirname, join } from "node:path"
 import { tmpdir } from "node:os"
 import type { InferenceProgress } from "../../shared/types/inference-progress"
+import type { ModelLifecycleEvent } from "../../shared/types/model-lifecycle"
 import {
   createAudioTempStore,
   defaultAudioTempDir,
@@ -8,7 +9,6 @@ import {
 import {
   createAuthenticatedSession,
   createGoogleAuthPortFromEnv,
-  createGoogleLinkedSession,
   type GoogleAuthPort,
   type SessionPort,
 } from "../auth"
@@ -39,6 +39,7 @@ import type {
   SettingsPort,
   StructuringPort,
   TranscriptionPort,
+  InferenceRuntimePort,
 } from "../ports"
 import { createMemoryNoteStore } from "../storage/memory.store"
 import { createJsonFileStore } from "../storage/json-file.store"
@@ -53,11 +54,13 @@ export type ApplicationPorts = {
   audio: AudioCapturePort
   settings: SettingsPort
   clipboard: ClipboardPort
+  inferenceRuntime?: InferenceRuntimePort
 }
 
 export type ComposeApplicationOptions = {
   audio?: AudioCapturePort
   onProgress?: (event: InferenceProgress) => void
+  onModelLifecycle?: (event: ModelLifecycleEvent) => void
   inferenceAdapter?: InferenceAdapterName
   settingsFile?: string
   googleAuth?: GoogleAuthPort
@@ -69,6 +72,7 @@ export type ComposeApplicationOptions = {
   structuring?: StructuringPort
   session?: SessionPort
   exportNote?: ExportPort
+  inferenceRuntime?: InferenceRuntimePort
 }
 
 function createFileSettingsPort(settingsFile: string): SettingsPort {
@@ -94,14 +98,13 @@ function toProgressPort(
   return { emit: onProgress ?? (() => undefined) }
 }
 
-function defaultSession(
-  googleAuth: GoogleAuthPort,
-  override?: SessionPort,
-): SessionPort {
+function defaultSession(_googleAuth: GoogleAuthPort, override?: SessionPort): SessionPort {
   if (override) return override
-  // IPC tests exercise clinical channels without a Google round-trip.
-  if (process.env.NODE_ENV === "test") return createAuthenticatedSession()
-  return createGoogleLinkedSession(googleAuth)
+  // Temporary product mode: the renderer intentionally bypasses login while
+  // the local-first consultation workflow is being validated end-to-end.
+  // Keep Google wiring available for the later re-enable rather than removing
+  // its implementation from the composition root.
+  return createAuthenticatedSession()
 }
 
 /**
@@ -124,7 +127,9 @@ export function composeApplication(
       inferenceAdapter:
         process.env.OIRA_INFERENCE ?? process.env.NOTALOCAL_INFERENCE,
     }).inferenceAdapter
-  const inference = createInferencePorts(inferenceAdapter)
+  const inference = createInferencePorts(inferenceAdapter, {
+    onModelLifecycle: options.onModelLifecycle,
+  })
   const notesStore = resolveNoteStore(options)
   const exportDir =
     options.exportDir ??
@@ -160,6 +165,7 @@ export function composeApplication(
       ({
         writeText: () => undefined,
       } satisfies ClipboardPort),
+    inferenceRuntime: options.inferenceRuntime ?? inference.runtime,
     settings:
       options.settingsFile === undefined
         ? createFileSettingsPort(join(tmpdir(), "oira-dev-settings.json"))

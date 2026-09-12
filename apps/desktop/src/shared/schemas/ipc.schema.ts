@@ -23,6 +23,8 @@ export const startEncounterInputSchema = z
   })
   .strict()
 
+export const warmTranscriptionInputSchema = z.object({}).strict()
+
 export const stopEncounterInputSchema = z
   .object({
     encounterId: z.string().uuid(),

@@ -5,5 +5,5 @@ export {
   loadModel,
   transcribe,
   unloadModel,
-  WHISPER_SMALL_Q8_0,
+  WHISPER_LARGE_V3_TURBO,
 } from "@qvac/sdk"

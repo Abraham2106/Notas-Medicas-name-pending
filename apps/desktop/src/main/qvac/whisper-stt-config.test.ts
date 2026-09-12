@@ -7,7 +7,6 @@ describe("createWhisperSttConfig", () => {
     expect(
       createWhisperSttConfig({
         language: "es",
-        minFreeBytes: 800 * 1024 * 1024,
         loadIdleTimeoutMs: 120_000,
       }),
     ).toEqual({
@@ -20,6 +19,10 @@ describe("createWhisperSttConfig", () => {
       no_timestamps: false,
       strategy: "beam_search",
       beam_search_beam_size: 5,
+      contextParams: {
+        use_gpu: true,
+        gpu_device: 1,
+      },
     })
   })
 })

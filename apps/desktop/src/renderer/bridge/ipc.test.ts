@@ -9,6 +9,7 @@ describe("adaptOiraApi", () => {
     const encounterId = "00000000-0000-4000-8000-000000000001"
     const note = syntheticNote()
     const api: OiraApi = {
+      warmTranscription: async () => ({ ok: true, data: { warmed: true } }),
       startEncounter: async () => ({
         ok: true,
         data: { encounterId, startedAt: "2026-01-01T00:00:00.000Z" },
@@ -63,6 +64,7 @@ describe("adaptOiraApi", () => {
         data: { authenticated: true, profile: null },
       }),
       onInferenceProgress: () => () => {},
+      onModelLifecycle: () => () => {},
     }
 
     const bridge = adaptOiraApi(api)
@@ -87,6 +89,10 @@ describe("adaptOiraApi", () => {
 
   it("throws on Result error", async () => {
     const api: OiraApi = {
+      warmTranscription: async () => ({
+        ok: false,
+        error: { code: "INVALID_INPUT", message: "x", retryable: false },
+      }),
       startEncounter: async () => ({
         ok: false,
         error: {
@@ -140,6 +146,7 @@ describe("adaptOiraApi", () => {
         error: { code: "INVALID_INPUT", message: "x", retryable: false },
       }),
       onInferenceProgress: () => () => {},
+      onModelLifecycle: () => () => {},
     }
 
     await expect(

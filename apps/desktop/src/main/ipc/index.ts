@@ -6,6 +6,7 @@ import { registerAuthIpc } from "./auth.ipc"
 import { registerClipboardIpc } from "./clipboard.ipc"
 import { registerEncounterIpc } from "./encounters.ipc"
 import { registerExportIpc } from "./export.ipc"
+import { registerInferenceIpc } from "./inference.ipc"
 import { registerNotesIpc } from "./notes.ipc"
 import { registerSettingsIpc } from "./settings.ipc"
 import type { IpcHandle } from "./types"
@@ -42,10 +43,16 @@ export function createIpcLogger(logger: Logger): IpcLogger {
 
 /** Driving adapter: maps validated IPC to inbound ports. No composition here. */
 export function registerIpc(handle: IpcHandle, deps: IpcDeps): void {
+  registerInferenceIpc(handle, {
+    inferenceRuntime: deps.inferenceRuntime,
+    session: deps.session,
+    logger: deps.logger,
+  })
   registerEncounterIpc(handle, {
     encounters: deps.encounters,
     session: deps.session,
     logger: deps.logger,
+    inferenceRuntime: deps.inferenceRuntime,
   })
   registerAudioIpc(handle, deps)
   registerNotesIpc(handle, deps)

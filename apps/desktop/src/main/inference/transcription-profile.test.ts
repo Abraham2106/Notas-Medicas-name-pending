@@ -1,27 +1,14 @@
 import { describe, expect, it } from "vitest"
 import { resolveTranscriptionProfile } from "./transcription-profile"
 
-const megabyte = 1024 * 1024
-const baseInput = { freeMemBytes: 800 * megabyte, language: "es" as const }
+const baseInput = { language: "es" as const }
 
 describe("resolveTranscriptionProfile", () => {
-  it("returns LOW_MEMORY just below the minimum", () => {
-    expect(
-      resolveTranscriptionProfile({
-        ...baseInput,
-        freeMemBytes: 800 * megabyte - 1,
-      }),
-    ).toEqual({ ok: false, code: "LOW_MEMORY" })
-  })
-
-  it("accepts memory at or above the minimum", () => {
-    expect(resolveTranscriptionProfile(baseInput).ok).toBe(true)
-    expect(
-      resolveTranscriptionProfile({
-        ...baseInput,
-        freeMemBytes: 800 * megabyte + 1,
-      }).ok,
-    ).toBe(true)
+  it("does not depend on available memory", () => {
+    expect(resolveTranscriptionProfile(baseInput)).toMatchObject({
+      language: "es",
+      loadIdleTimeoutMs: 120_000,
+    })
   })
 
   it.each([
@@ -40,18 +27,6 @@ describe("resolveTranscriptionProfile", () => {
       ...baseInput,
       requestedTimeoutMs,
     })
-    expect(result).toMatchObject({
-      ok: true,
-      profile: { loadIdleTimeoutMs: expected },
-    })
+    expect(result).toMatchObject({ loadIdleTimeoutMs: expected })
   })
-
-  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -1])(
-    "rejects invalid memory %s",
-    (freeMemBytes) => {
-      expect(
-        resolveTranscriptionProfile({ ...baseInput, freeMemBytes }),
-      ).toEqual({ ok: false, code: "LOW_MEMORY" })
-    },
-  )
 })

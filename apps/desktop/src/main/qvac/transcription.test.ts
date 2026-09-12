@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { createQvacInferenceRuntime } from "./inference-runtime"
 import { createQvacTranscription } from "./transcription"
 
 vi.mock("./sdk", () => ({
@@ -9,7 +10,7 @@ vi.mock("./sdk", () => ({
   ]),
   unloadModel: vi.fn(async () => undefined),
   close: vi.fn(async () => undefined),
-  WHISPER_SMALL_Q8_0: { name: "WHISPER_SMALL_Q8_0" },
+  WHISPER_LARGE_V3_TURBO: { name: "WHISPER_LARGE_V3_TURBO" },
 }))
 
 afterEach(() => {
@@ -42,11 +43,10 @@ async function flushMicrotasks(times = 8): Promise<void> {
  * `pnpm --filter oira-desktop qvac:whisper`.
  */
 describe("createQvacTranscription", () => {
-  it("loadModel → transcribe → unloadModel → close", async () => {
+  it("releases Whisper after each delivered transcription", async () => {
     const sdk = await import("./sdk")
-    const port = createQvacTranscription({
-      freeMemBytes: () => 2_000_000_000,
-    })
+    const runtime = createQvacInferenceRuntime({ loadSdk: async () => sdk })
+    const port = createQvacTranscription({ runtime })
     const { segments } = await port.transcribe({ filePath: "C:/tmp/capture.wav" })
     expect(segments).toEqual([
       { id: "w1", speaker: null, startMs: 0, text: "Hola." },
@@ -59,7 +59,10 @@ describe("createQvacTranscription", () => {
         metadata: true,
       }),
     )
-    expect(sdk.unloadModel).toHaveBeenCalledWith({ modelId: "model-1" })
+    await port.transcribe({ filePath: "C:/tmp/second.wav" })
+    expect(sdk.loadModel).toHaveBeenCalledTimes(2)
+    expect(sdk.unloadModel).toHaveBeenCalledTimes(2)
+    await runtime.shutdown()
     expect(sdk.close).toHaveBeenCalledOnce()
   })
 
@@ -73,24 +76,19 @@ describe("createQvacTranscription", () => {
     expect(sdk.loadModel).not.toHaveBeenCalled()
   })
 
-  it("fails with LOW_MEMORY before importing the SDK", async () => {
+  it("imports the SDK without a memory preflight", async () => {
     const loadSdk = vi.fn(async () => import("./sdk"))
     const port = createQvacTranscription({
-      freeMemBytes: () => 800 * 1024 * 1024 - 1,
       loadSdk,
     })
-    await expect(
-      port.transcribe({ filePath: "C:/tmp/capture.wav" }),
-    ).rejects.toMatchObject({
-      code: "TRANSCRIPTION_FAILED",
-      message: "LOW_MEMORY",
+    await expect(port.transcribe({ filePath: "C:/tmp/capture.wav" })).resolves.toEqual({
+      segments: [{ id: "w1", speaker: null, startMs: 0, text: "Hola." }],
     })
-    expect(loadSdk).not.toHaveBeenCalled()
+    expect(loadSdk).toHaveBeenCalledOnce()
   })
 
   it("maps SDK import failures to TRANSCRIPTION_FAILED", async () => {
     const port = createQvacTranscription({
-      freeMemBytes: () => 2_000_000_000,
       loadSdk: async () => {
         throw new Error("native module missing")
       },
@@ -123,7 +121,6 @@ describe("createQvacTranscription", () => {
         })
       })
       const port = createQvacTranscription({
-        freeMemBytes: () => 2_000_000_000,
       })
       const pending = port.transcribe({ filePath: "C:/tmp/capture.wav" })
       const done = expect(pending).resolves.toEqual({
@@ -152,7 +149,6 @@ describe("createQvacTranscription", () => {
         return Object.assign(loading, { requestId: "load-request-1" })
       })
       const port = createQvacTranscription({
-        freeMemBytes: () => 2_000_000_000,
       })
       const pending = port.transcribe({ filePath: "C:/tmp/capture.wav" })
       const assertion = expect(pending).rejects.toMatchObject({
@@ -187,7 +183,6 @@ describe("createQvacTranscription", () => {
         return Object.assign(loading, { requestId: "load-request-1" })
       })
       const port = createQvacTranscription({
-        freeMemBytes: () => 2_000_000_000,
       })
       const pending = port.transcribe({ filePath: "C:/tmp/capture.wav" })
       const assertion = expect(pending).rejects.toMatchObject({
@@ -215,7 +210,6 @@ describe("createQvacTranscription", () => {
         return Object.assign(loading, { requestId: "late-load" })
       })
       const port = createQvacTranscription({
-        freeMemBytes: () => 2_000_000_000,
       })
       const pending = port.transcribe({ filePath: "C:/tmp/capture.wav" })
       const assertion = expect(pending).rejects.toMatchObject({
@@ -229,7 +223,7 @@ describe("createQvacTranscription", () => {
       finishLoad("late-model")
       await flushMicrotasks()
       expect(sdk.unloadModel).toHaveBeenCalledWith({ modelId: "late-model" })
-      expect(sdk.close).toHaveBeenCalledOnce()
+      expect(sdk.close).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -243,9 +237,7 @@ describe("createQvacTranscription", () => {
         const loading = new Promise<string>(() => {})
         return Object.assign(loading, { requestId: "still-loading" })
       })
-      const port = createQvacTranscription({
-        freeMemBytes: () => 2_000_000_000,
-      })
+      const port = createQvacTranscription()
       const first = port.transcribe({ filePath: "C:/tmp/capture.wav" })
       const firstAssertion = expect(first).rejects.toMatchObject({
         message: "LOAD_WATCHDOG",
@@ -256,18 +248,17 @@ describe("createQvacTranscription", () => {
         port.transcribe({ filePath: "C:/tmp/second.wav" }),
       ).rejects.toMatchObject({
         code: "TRANSCRIPTION_FAILED",
-        message: "INFERENCE_BUSY",
+        message: "MODEL_LOAD_PENDING",
       })
     } finally {
       vi.useRealTimers()
     }
   })
 
-  it("unloads and closes when transcribe fails", async () => {
+  it("keeps the model resident when transcribe fails", async () => {
     const sdk = await import("./sdk")
     vi.mocked(sdk.transcribe).mockRejectedValueOnce(new Error("decode failed"))
     const port = createQvacTranscription({
-      freeMemBytes: () => 2_000_000_000,
     })
 
     await expect(
@@ -276,8 +267,8 @@ describe("createQvacTranscription", () => {
       code: "TRANSCRIPTION_FAILED",
       message: "decode failed",
     })
-    expect(sdk.unloadModel).toHaveBeenCalledWith({ modelId: "model-1" })
-    expect(sdk.close).toHaveBeenCalledOnce()
+    expect(sdk.unloadModel).not.toHaveBeenCalled()
+    expect(sdk.close).not.toHaveBeenCalled()
   })
 
   it("rejects concurrent inference while loading", async () => {
@@ -286,7 +277,6 @@ describe("createQvacTranscription", () => {
       const sdk = await import("./sdk")
       stubLoadModelOnce(sdk, () => new Promise<string>(() => {}))
       const port = createQvacTranscription({
-        freeMemBytes: () => 2_000_000_000,
         env: { OIRA_STT_LOAD_TIMEOUT_MS: "10000" },
       })
       const first = port.transcribe({ filePath: "C:/tmp/capture.wav" })

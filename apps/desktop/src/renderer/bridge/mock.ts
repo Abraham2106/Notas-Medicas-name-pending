@@ -6,6 +6,7 @@ import {
 
 import { SYNTHETIC_TRANSCRIPT } from "../../shared/fixtures/synthetic-consult"
 import type { InferenceProgress } from "../../shared/types/inference-progress"
+import type { ModelLifecycleEvent } from "../../shared/types/model-lifecycle"
 import {
   defaultSettings,
   type AppSettings,
@@ -14,6 +15,7 @@ import { DEMO_AUTH_PROFILE, type AuthProfile, type AuthSessionState } from "../.
 
 /** UI fixture for the renderer prototype — not the Main IPC contract. */
 export type DemoBridge = {
+  warmTranscription: () => Promise<void>
   startEncounter: (input: {
     label: string
     visitType: string
@@ -44,6 +46,7 @@ export type DemoBridge = {
   signOut: () => Promise<{ signedOut: true }>
   getAuthSession: () => Promise<AuthSessionState>
   onInferenceProgress: (listener: (event: InferenceProgress) => void) => () => void
+  onModelLifecycle: (listener: (event: ModelLifecycleEvent) => void) => () => void
 }
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -92,6 +95,7 @@ export function createMockBridge(): DemoBridge {
   let signedIn = false
 
   return {
+    async warmTranscription() {},
     async startEncounter() {
       activeId = crypto.randomUUID()
       return { encounterId: activeId, startedAt: new Date().toISOString() }
@@ -103,6 +107,9 @@ export function createMockBridge(): DemoBridge {
     },
     async appendAudio() {},
     onInferenceProgress() {
+      return () => {}
+    },
+    onModelLifecycle() {
       return () => {}
     },
     async generateNote(encounterId) {

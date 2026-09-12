@@ -6,5 +6,4 @@ export {
   resolveTranscriptionProfile,
   type TranscriptionProfile,
   type TranscriptionProfileInput,
-  type TranscriptionProfileResult,
 } from "./transcription-profile"

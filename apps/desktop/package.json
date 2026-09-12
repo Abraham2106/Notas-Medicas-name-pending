@@ -18,7 +18,7 @@
   "dependencies": {
     "@oira/types": "workspace:*",
     "@oira/ui": "workspace:*",
-    "@qvac/sdk": "0.17.1",
+    "@qvac/sdk": "0.18.2",
     "bare-runtime-win32-x64": "1.31.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

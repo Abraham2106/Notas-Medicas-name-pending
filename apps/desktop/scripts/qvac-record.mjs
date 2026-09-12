@@ -1,5 +1,5 @@
 import { writeFileSync, mkdtempSync, rmSync } from "node:fs"
-import { freemem, tmpdir } from "node:os"
+import { tmpdir } from "node:os"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createRequire } from "node:module"
@@ -78,12 +78,9 @@ function preparePcm(pcm) {
 
 async function getSession() {
   if (sdk && modelId) return { sdk, modelId }
-  if (freemem() < 800 * 1024 * 1024) {
-    throw new Error("LOW_MEMORY")
-  }
   sdk = await import("@qvac/sdk")
   modelId = await sdk.loadModel({
-    modelSrc: sdk.WHISPER_SMALL_Q8_0,
+    modelSrc: sdk.WHISPER_LARGE_V3_TURBO,
     modelConfig: STT_CONFIG,
   })
   return { sdk, modelId }
@@ -135,7 +132,7 @@ app.whenReady().then(() => {
   const window = new BrowserWindow({
     width: 480,
     height: 420,
-    title: "NotaLocal · Whisper small ES",
+    title: "Oira · Whisper Turbo ES",
     alwaysOnTop: true,
     webPreferences: {
       preload: join(here, "qvac-record-preload.cjs"),

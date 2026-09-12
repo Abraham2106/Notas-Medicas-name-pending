@@ -15,6 +15,9 @@ async function unwrap<T>(resultPromise: Promise<Result<T>>): Promise<T> {
 /** Maps Justin's `Result<T>` IPC API to the renderer DemoBridge shape. */
 export function adaptOiraApi(api: OiraApi): DemoBridge {
   return {
+    async warmTranscription() {
+      await unwrap(api.warmTranscription())
+    },
     async startEncounter(input) {
       return unwrap(
         api.startEncounter({
@@ -58,6 +61,9 @@ export function adaptOiraApi(api: OiraApi): DemoBridge {
     },
     onInferenceProgress(listener: (event: InferenceProgress) => void) {
       return api.onInferenceProgress(listener)
+    },
+    onModelLifecycle(listener) {
+      return api.onModelLifecycle(listener)
     },
   }
 }

@@ -5,6 +5,7 @@ import {
 } from "../../shared/schemas/ipc.schema"
 import type { EncounterPort } from "../encounters"
 import type { SessionPort } from "../auth"
+import type { InferenceRuntimePort } from "../inference/port"
 import { withValidation, type IpcLogger } from "./withValidation"
 import type { IpcHandle } from "./types"
 
@@ -14,6 +15,7 @@ export function registerEncounterIpc(
     encounters: EncounterPort
     session: SessionPort
     logger: IpcLogger
+    inferenceRuntime?: InferenceRuntimePort
   },
 ): void {
   handle(IPC_CHANNELS.START_ENCOUNTER, (_event, raw) =>
@@ -23,7 +25,12 @@ export function registerEncounterIpc(
       requiresSession: true,
       session: deps.session,
       logger: deps.logger,
-      run: (input) => deps.encounters.start(input),
+      run: async (input) => {
+        // Start the expensive local warm-up at the same user action that opens
+        // the microphone, but do not delay recording or permission handling.
+        void deps.inferenceRuntime?.warmTranscription().catch(() => undefined)
+        return deps.encounters.start(input)
+      },
     })(raw),
   )
 

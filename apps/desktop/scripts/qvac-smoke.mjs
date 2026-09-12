@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url"
 
 const self = fileURLToPath(import.meta.url)
 const LOAD_WATCHDOG_MS = 120_000
-const MIN_FREE_BYTES = 800 * 1024 * 1024
 
 function readCpu() {
   const result = spawnSync(
@@ -18,12 +17,6 @@ function readCpu() {
     { encoding: "utf8" },
   )
   return Number(result.stdout.trim())
-}
-
-function assertResources() {
-  if (os.freemem() < MIN_FREE_BYTES) {
-    throw new Error("LOW_MEMORY")
-  }
 }
 
 if (!process.versions.electron) {
@@ -39,8 +32,8 @@ if (!process.versions.electron) {
     process.stderr.write(`watch cpu=${cpu} freeRAM_GB=${freeGB.toFixed(2)}\n`)
     if (cpu >= 98) highStreak += 1
     else highStreak = 0
-    if (highStreak >= 2 || os.freemem() < MIN_FREE_BYTES) {
-      process.stderr.write("ABORT resource limit\n")
+    if (highStreak >= 2) {
+      process.stderr.write("ABORT sustained CPU limit\n")
       if (child.pid) {
         spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"])
       }
@@ -53,20 +46,18 @@ if (!process.versions.electron) {
     process.exit(code ?? 1)
   })
 } else {
-  const { close, loadModel, unloadModel, WHISPER_SMALL_Q8_0 } = await import(
+  const { close, loadModel, unloadModel, WHISPER_LARGE_V3_TURBO } = await import(
     "@qvac/sdk"
   )
-  if (WHISPER_SMALL_Q8_0.name !== "WHISPER_SMALL_Q8_0") {
+  if (WHISPER_LARGE_V3_TURBO.name !== "WHISPER_LARGE_V3_TURBO") {
     throw new Error("SMOKE_MODEL_MISMATCH")
   }
-  assertResources()
   let modelId
   try {
     modelId = await Promise.race([
       loadModel({
-        modelSrc: WHISPER_SMALL_Q8_0,
+        modelSrc: WHISPER_LARGE_V3_TURBO,
         onProgress: (progress) => {
-          assertResources()
           const percentage = Number(progress.percentage)
           if (Number.isFinite(percentage)) {
             process.stderr.write(`qvac.smoke ${Math.round(percentage)}\n`)
@@ -79,10 +70,10 @@ if (!process.versions.electron) {
     ])
     await unloadModel({ modelId })
     process.stdout.write(
-      `qvac.smoke ok expectedSize=${WHISPER_SMALL_Q8_0.expectedSize}\n`,
+      `qvac.smoke ok expectedSize=${WHISPER_LARGE_V3_TURBO.expectedSize}\n`,
     )
   } finally {
     await close().catch(() => undefined)
   }
-  process.exit(0)
+  process.exitCode = 0
 }

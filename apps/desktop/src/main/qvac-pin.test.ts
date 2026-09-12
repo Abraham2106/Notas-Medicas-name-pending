@@ -18,11 +18,11 @@ function walk(dir: string, files: string[] = []): string[] {
 }
 
 describe("Q02 qvac pin", () => {
-  it("pins @qvac/sdk to 0.17.1 with no caret", () => {
+  it("pins @qvac/sdk to 0.18.2 with no caret", () => {
     const pkg = JSON.parse(
       readFileSync(join(desktopRoot, "package.json"), "utf8"),
     ) as { dependencies?: Record<string, string> }
-    expect(pkg.dependencies?.[SDK]).toBe("0.17.1")
+    expect(pkg.dependencies?.[SDK]).toBe("0.18.2")
   })
 
   it("imports @qvac/sdk only under src/main/qvac", () => {

@@ -10,6 +10,7 @@ import type {
   StopEncounterInput,
 } from "../schemas/ipc.schema"
 import type { InferenceProgress } from "./inference-progress"
+import type { ModelLifecycleEvent } from "./model-lifecycle"
 import type { Result } from "./result"
 import type { AppSettings } from "../schemas/settings.schema"
 import type {
@@ -20,6 +21,10 @@ import type {
 export type StartEncounterResult = {
   encounterId: string
   startedAt: string
+}
+
+export type WarmTranscriptionResult = {
+  warmed: true
 }
 
 export type StopEncounterResult = {
@@ -56,6 +61,7 @@ export type SaveSettingsResult = AppSettings
  * Draft notes are structured (I4 sections + transcript), not a free-text body.
  */
 export type OiraApi = {
+  warmTranscription: () => Promise<Result<WarmTranscriptionResult>>
   startEncounter: (
     input?: StartEncounterInput,
   ) => Promise<Result<StartEncounterResult>>
@@ -81,4 +87,5 @@ export type OiraApi = {
   onInferenceProgress: (
     listener: (event: InferenceProgress) => void,
   ) => () => void
+  onModelLifecycle: (listener: (event: ModelLifecycleEvent) => void) => () => void
 }

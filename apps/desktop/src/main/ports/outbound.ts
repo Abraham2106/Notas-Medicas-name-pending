@@ -58,4 +58,5 @@ export type {
   TranscriptionPort,
   TranscriptionResult,
 } from "../inference/port"
+export type { InferenceRuntimePort } from "../inference/port"
 export type { NoteStorePort, StoredNoteRecord } from "../storage/storage.types"

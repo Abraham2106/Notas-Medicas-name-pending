@@ -24,4 +24,5 @@ export type {
   TranscriptionInput,
   TranscriptionPort,
   TranscriptionResult,
+  InferenceRuntimePort,
 } from "./outbound"

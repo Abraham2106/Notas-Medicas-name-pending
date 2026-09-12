@@ -103,22 +103,33 @@ app.whenReady().then(() => {
   }
   audio.sweepOrphans()
 
-  registerIpc(
-    bindIpcMain(),
-    composeApplication(createIpcLogger(logger), {
-      audio,
-      inferenceAdapter,
-      settingsFile,
-      notesFile,
-      clipboard: { writeText: (text) => clipboard.writeText(text) },
-      onProgress: (event) => {
-        for (const window of BrowserWindow.getAllWindows()) {
-          window.webContents.send(IPC_EVENTS.INFERENCE_PROGRESS, event)
-        }
-      },
-    }),
-  )
+  const application = composeApplication(createIpcLogger(logger), {
+    audio,
+    inferenceAdapter,
+    settingsFile,
+    notesFile,
+    clipboard: { writeText: (text) => clipboard.writeText(text) },
+    onProgress: (event) => {
+      for (const window of BrowserWindow.getAllWindows()) {
+        window.webContents.send(IPC_EVENTS.INFERENCE_PROGRESS, event)
+      }
+    },
+    onModelLifecycle: (event) => {
+      for (const window of BrowserWindow.getAllWindows()) {
+        window.webContents.send(IPC_EVENTS.MODEL_LIFECYCLE, event)
+      }
+    },
+  })
+  registerIpc(bindIpcMain(), application)
   createWindow()
+
+  let shutdownStarted = false
+  app.on("before-quit", (event) => {
+    if (shutdownStarted || !application.inferenceRuntime) return
+    shutdownStarted = true
+    event.preventDefault()
+    void application.inferenceRuntime.shutdown().finally(() => app.quit())
+  })
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
