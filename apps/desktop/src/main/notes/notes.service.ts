@@ -18,6 +18,7 @@ import type {
   ProgressPort,
   StructuringPort,
   TranscriptionPort,
+  InferenceRuntimePort,
 } from "../ports/outbound"
 
 export type { NotesPort }
@@ -35,6 +36,7 @@ export type NotesPipelineDeps = NotesServiceDeps & {
   notes?: NoteStorePort
   clock?: Clock
   structureAttempts?: number
+  inferenceRuntime?: InferenceRuntimePort
 }
 
 type GeneratedDraft = Awaited<ReturnType<typeof runGenerateNote>>

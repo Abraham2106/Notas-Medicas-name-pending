@@ -7,9 +7,9 @@ import {
 } from "./model-ids"
 
 describe("P0 QVAC model ids", () => {
-  it("uses Whisper Turbo for Spanish STT and the smallest instruct LLM", () => {
+  it("uses Whisper Turbo for Spanish STT and Qwen3 4B Q4_K_M", () => {
     expect(P0_STT_MODEL_ID).toBe("WHISPER_LARGE_V3_TURBO")
-    expect(P0_LLM_MODEL_ID).toBe("QWEN3_600M_INST_Q4")
+    expect(P0_LLM_MODEL_ID).toBe("QWEN3_4B_Q4_K_M")
     expect(P0_SMOKE_MODEL_ID).toBe("WHISPER_LARGE_V3_TURBO")
   })
 

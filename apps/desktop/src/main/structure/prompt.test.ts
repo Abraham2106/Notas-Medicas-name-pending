@@ -7,15 +7,19 @@ function segment(id: string, text: string): TranscriptSegment {
 }
 
 describe("main/structure/prompt", () => {
-  it("incluye las reglas inviolables y las 7 secciones en el system prompt", () => {
+  it("pide un JSON plano de las 7 secciones", () => {
     const { system } = buildStructuringMessages([segment("seg-1", "hola")])
 
     expect(system).toContain("el médico decide")
-    expect(system).toContain("STATED")
-    expect(system).toContain("NOT_STATED")
-    expect(system).toContain("sourceSegmentIds")
+    expect(system).toContain("visit_context")
+    expect(system).toContain("clinical_narrative")
     expect(system).toContain("follow_up")
     expect(system).toContain("clinician_documented_plan")
+    expect(system).toContain("No infieras")
+    expect(system).not.toContain("STATED")
+    expect(system).not.toContain("sourceSegmentIds")
+    expect(system).not.toContain("scan con rayos X")
+    expect(system).not.toContain("vaya a urgencias")
   })
 
   it("formatea los segmentos con id y hablante", () => {
@@ -29,13 +33,12 @@ describe("main/structure/prompt", () => {
     expect(user).toContain("[seg-2 | Paciente] Me duele la rodilla.")
   })
 
-  it("avisa cuando recorta por longitud", () => {
+  it("keeps the complete transcript for chunking", () => {
     const transcript = Array.from({ length: 401 }, (_, index) =>
       segment(`seg-${index}`, `línea ${index}`),
     )
     const { user } = buildStructuringMessages(transcript)
 
-    expect(user).toContain("1 segmentos omitidos por longitud")
-    expect(user).not.toContain("línea 400")
+    expect(user).toContain("línea 400")
   })
 })

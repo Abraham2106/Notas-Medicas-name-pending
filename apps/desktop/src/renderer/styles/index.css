@@ -76,7 +76,7 @@
   top: 18px;
   right: 18px;
   z-index: 80;
-  width: 230px;
+  width: 220px;
   overflow: hidden;
   border: 1px solid rgb(18 12 8 / 0.16);
   border-radius: 14px;
@@ -84,6 +84,40 @@
   box-shadow: 0 12px 34px rgb(18 12 8 / 0.14);
   backdrop-filter: blur(14px);
   font-size: 0.78rem;
+}
+
+.model-debug-pill {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 80;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid rgb(18 12 8 / 0.14);
+  border-radius: 999px;
+  background: rgb(251 249 246 / 0.94);
+  box-shadow: 0 8px 22px rgb(18 12 8 / 0.1);
+  backdrop-filter: blur(14px);
+  color: inherit;
+  cursor: pointer;
+}
+
+.model-debug-pill:hover,
+.model-debug-close:hover {
+  border-color: var(--nl-accent);
+}
+
+.model-debug-close {
+  border: 0;
+  background: transparent;
+  color: var(--nl-text-muted);
+  font-family: var(--nl-font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
 .model-debug-head,
@@ -723,11 +757,15 @@ kbd {
 }
 
 @media (max-width: 900px) {
-  .model-debug-panel {
+  .model-debug-panel,
+  .model-debug-pill {
     top: auto;
     right: 12px;
     bottom: 12px;
-    width: min(230px, calc(100vw - 24px));
+    width: auto;
+  }
+  .model-debug-panel {
+    width: min(220px, calc(100vw - 24px));
   }
   .topbar {
     flex-wrap: wrap;

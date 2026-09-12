@@ -12,6 +12,7 @@ import type {
   StructuringPort,
   TranscriptionPort,
 } from "../ports/outbound"
+import type { InferenceRuntimePort } from "../inference/port"
 
 export const DEFAULT_STRUCTURE_ATTEMPTS = 2
 
@@ -22,6 +23,7 @@ export type GenerateNoteWorkflowDeps = {
   audio?: AudioCapturePort
   progress?: ProgressPort
   structureAttempts?: number
+  inferenceRuntime?: InferenceRuntimePort
 }
 
 /** Defensive precondition: callers must pass a real encounter id. */
@@ -61,14 +63,19 @@ export async function runGenerateNote(
   }
 
   deps.progress?.emit({ encounterId, phase: "transcribing" })
+  let transcriptForFailure: GenerateNoteResult["transcript"] | undefined
   try {
     const filePath = deps.audio ? deps.audio.wavPath(encounterId) : undefined
     if (deps.audio && !filePath) throw audioCaptureFailedError()
     const { segments } = await deps.transcription.transcribe({
       filePath: filePath ?? "",
     })
+    transcriptForFailure = segments
 
-    deps.progress?.emit({ encounterId, phase: "structuring" })
+    // Renderer reveal and model handoff run independently: never wait for a UI
+    // acknowledgement or animation timer before releasing Whisper/loading Qwen.
+    deps.progress?.emit({ encounterId, phase: "structuring", transcript: segments })
+    await deps.inferenceRuntime?.handoffToStructuring()
     let lastError: unknown
     for (let attempt = 0; attempt < attempts; attempt++) {
       try {
@@ -92,7 +99,13 @@ export async function runGenerateNote(
     throw lastError
   } catch (error) {
     await advanceEncounter(deps.encounters, encounterId, "failed")
-    deps.progress?.emit({ encounterId, phase: "failed" })
+    deps.progress?.emit({
+      encounterId,
+      phase: "failed",
+      ...(transcriptForFailure
+        ? { transcript: transcriptForFailure, stage: "structuring" as const }
+        : { stage: "transcription" as const }),
+    })
     throw error
   } finally {
     deps.audio?.purge(encounterId)

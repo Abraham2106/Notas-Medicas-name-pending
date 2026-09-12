@@ -33,12 +33,7 @@ export function createQvacTranscription(
       if (!input.filePath) throw transcriptionFailedError()
       try {
         const raw = await runtime.transcribe({ filePath: input.filePath })
-        const result = { segments: mapSttSegments(raw) }
-        // The clinician receives the transcript first. Releasing Whisper and
-        // opening the future Qwen handoff happens in the background so this
-        // transition never delays the review screen.
-        void runtime.handoffToStructuring().catch(() => undefined)
-        return result
+        return { segments: mapSttSegments(raw) }
       } catch (error) {
         if (isAppError(error)) throw error
         throw transcriptionFailedError(

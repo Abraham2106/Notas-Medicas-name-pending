@@ -19,10 +19,9 @@ export type TranscriptionPort = {
 export type InferenceRuntimePort = {
   warmTranscription: () => Promise<void>
   /**
-   * Releases the transcription model once its result has been delivered and
-   * reserves the lifecycle boundary where the future local structuring model
-   * (Qwen) will be prepared. The current structuring adapter remains
-   * deterministic and does not invoke Qwen yet.
+   * Unloads the transcription model and loads the local structuring model.
+   * Callers must wait for this promise before invoking Qwen. A failed Whisper
+   * unload must not proceed to Qwen load.
    */
   handoffToStructuring: () => Promise<void>
   shutdown: () => Promise<void>

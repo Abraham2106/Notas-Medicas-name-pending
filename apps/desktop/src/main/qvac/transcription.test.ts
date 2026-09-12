@@ -3,6 +3,10 @@ import { createQvacInferenceRuntime } from "./inference-runtime"
 import { createQvacTranscription } from "./transcription"
 
 vi.mock("./sdk", () => ({
+  completion: vi.fn(() => ({
+    requestId: "completion-1",
+    final: Promise.resolve({ contentText: "{}", raw: { fullText: "{}" }, stopReason: "eos" }),
+  })),
   cancel: vi.fn(async () => undefined),
   loadModel: vi.fn(async () => "model-1"),
   transcribe: vi.fn(async () => [
@@ -11,6 +15,9 @@ vi.mock("./sdk", () => ({
   unloadModel: vi.fn(async () => undefined),
   close: vi.fn(async () => undefined),
   WHISPER_LARGE_V3_TURBO: { name: "WHISPER_LARGE_V3_TURBO" },
+  QWEN3_4B_Q4_K_M: { name: "QWEN3_4B_Q4_K_M", expectedSize: 1 },
+  getSystemResources: vi.fn(async () => ({ capabilities: { gpus: { status: "supported", value: [] } } })),
+  ContextOverflowError: class ContextOverflowError extends Error {},
 }))
 
 afterEach(() => {
@@ -43,7 +50,7 @@ async function flushMicrotasks(times = 8): Promise<void> {
  * `pnpm --filter oira-desktop qvac:whisper`.
  */
 describe("createQvacTranscription", () => {
-  it("releases Whisper after each delivered transcription", async () => {
+  it("keeps Whisper resident until explicit handoff", async () => {
     const sdk = await import("./sdk")
     const runtime = createQvacInferenceRuntime({ loadSdk: async () => sdk })
     const port = createQvacTranscription({ runtime })
@@ -60,8 +67,10 @@ describe("createQvacTranscription", () => {
       }),
     )
     await port.transcribe({ filePath: "C:/tmp/second.wav" })
-    expect(sdk.loadModel).toHaveBeenCalledTimes(2)
-    expect(sdk.unloadModel).toHaveBeenCalledTimes(2)
+    expect(sdk.loadModel).toHaveBeenCalledOnce()
+    expect(sdk.unloadModel).not.toHaveBeenCalled()
+    await runtime.handoffToStructuring()
+    expect(sdk.unloadModel).toHaveBeenCalledWith({ modelId: "model-1" })
     await runtime.shutdown()
     expect(sdk.close).toHaveBeenCalledOnce()
   })
@@ -134,7 +143,7 @@ describe("createQvacTranscription", () => {
       await vi.advanceTimersByTimeAsync(60_000)
       finishLoad()
       await done
-      expect(sdk.unloadModel).toHaveBeenCalledWith({ modelId: "model-slow" })
+      expect(sdk.unloadModel).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }

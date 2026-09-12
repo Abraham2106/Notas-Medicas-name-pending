@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Button } from "@oira/ui"
 import type { SectionId } from "@oira/types"
-import type { WhisperLifecycleState } from "../shared/types/model-lifecycle"
+import type { QwenLifecycleState, WhisperLifecycleState, DeviceLifecycleInfo } from "../shared/types/model-lifecycle"
 import { formatNoteAsText } from "../shared/clinical-export"
 import { getBridge } from "./bridge/oira"
 import { FlowStepper } from "./components/FlowStepper"
@@ -47,10 +47,12 @@ export function App() {
   const [booting, setBooting] = useState(true)
   const [modelDebug, setModelDebug] = useState<{
     whisper: WhisperLifecycleState
-    qwenAvailable: boolean
+    qwen: QwenLifecycleState
+    whisperDevice?: DeviceLifecycleInfo
+    qwenDevice?: DeviceLifecycleInfo
   }>({
     whisper: "IDLE",
-    qwenAvailable: false,
+    qwen: "IDLE",
   })
   const [ready, setReady] = useState(false)
   const [recorderPrepared, setRecorderPrepared] = useState(false)

@@ -1,5 +1,13 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { createInferencePorts } from "./select"
+
+const structure = vi.fn(async () => ({
+  note: { sections: {} },
+}))
+
+vi.mock("../qvac/qwen-structuring", () => ({
+  createQwenStructuring: vi.fn(() => ({ structure })),
+}))
 
 describe("inference ports", () => {
   it("mock transcribe returns synthetic segments without a network SDK", async () => {
@@ -10,15 +18,9 @@ describe("inference ports", () => {
     expect(Object.keys(note.sections)).toHaveLength(7)
   })
 
-  it("qvac structuring drafts from the spoken transcript without loading an LLM", async () => {
+  it("wires qvac structuring to the Qwen adapter", async () => {
     const { structuring } = createInferencePorts("qvac")
-    const { note } = await structuring.structure({
-      transcript: [
-        { id: "seg-live", speaker: null, startMs: 0, text: "Me duele la rodilla." },
-      ],
-    })
-    expect(note.sections.clinical_narrative.text).toBe("Me duele la rodilla.")
-    expect(note.sections.clinical_narrative.sourceSegmentIds).toEqual(["seg-live"])
-    expect(note.sections.follow_up.presence).toBe("NOT_STATED")
+    await structuring.structure({ transcript: [] })
+    expect(structure).toHaveBeenCalled()
   })
 })

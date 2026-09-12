@@ -148,6 +148,7 @@ export function composeApplication(
       notes: notesStore,
       transcription: options.transcription ?? inference.transcription,
       structuring: options.structuring ?? inference.structuring,
+      inferenceRuntime: options.inferenceRuntime ?? inference.runtime,
     }),
     exportNote:
       options.exportNote ??

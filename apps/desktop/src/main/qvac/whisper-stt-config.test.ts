@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { createWhisperSttConfig } from "./whisper-stt-config"
 
 describe("createWhisperSttConfig", () => {
-  it("keeps Whisper decoding keys out of the provider-agnostic profile", () => {
+  it("omits the GPU index when it is unknown", () => {
     expect(
       createWhisperSttConfig({
         language: "es",
@@ -21,8 +21,16 @@ describe("createWhisperSttConfig", () => {
       beam_search_beam_size: 5,
       contextParams: {
         use_gpu: true,
-        gpu_device: 1,
       },
     })
+  })
+
+  it("includes the selected GPU index when passed", () => {
+    expect(
+      createWhisperSttConfig(
+        { language: "es", loadIdleTimeoutMs: 120_000 },
+        { gpuDevice: 1 },
+      ).contextParams.gpu_device,
+    ).toBe(1)
   })
 })

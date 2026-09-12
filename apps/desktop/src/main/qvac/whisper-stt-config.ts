@@ -1,12 +1,14 @@
 import type { TranscriptionProfile } from "../inference/transcription-profile"
 
-// QVAC 0.18.2 enumerates the AMD integrated adapter as device 0 and the
-// NVIDIA RTX 2050 as device 1 on the target workstation. Keep this at the
-// Whisper boundary: GPU is preferred, while the native backend retains its
-// normal CPU/RAM fallback if VRAM is insufficient.
-const NVIDIA_GPU_DEVICE = 1
+export type WhisperDeviceOptions = {
+  /** Whisper.cpp device index from QVAC enumeration. Omit when unknown. */
+  gpuDevice?: number
+}
 
-export function createWhisperSttConfig(profile: TranscriptionProfile) {
+export function createWhisperSttConfig(
+  profile: TranscriptionProfile,
+  device: WhisperDeviceOptions = {},
+) {
   return {
     language: profile.language,
     translate: false,
@@ -19,7 +21,7 @@ export function createWhisperSttConfig(profile: TranscriptionProfile) {
     beam_search_beam_size: 5,
     contextParams: {
       use_gpu: true,
-      gpu_device: NVIDIA_GPU_DEVICE,
+      ...(typeof device.gpuDevice === "number" ? { gpu_device: device.gpuDevice } : {}),
     },
   }
 }
