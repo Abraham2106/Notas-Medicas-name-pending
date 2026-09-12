@@ -20,7 +20,7 @@
     <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white">
     <img alt="Electron" src="https://img.shields.io/badge/Electron-38-47848F?style=flat-square&logo=electron&logoColor=white">
     <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black">
-    <img alt="QVAC" src="https://img.shields.io/badge/QVAC-0.17.1-2B5F73?style=flat-square">
+    <img alt="QVAC" src="https://img.shields.io/badge/QVAC-0.18.2-2B5F73?style=flat-square">
     <img alt="pnpm" src="https://img.shields.io/badge/pnpm-10-F69220?style=flat-square&logo=pnpm&logoColor=white">
   </p>
 
@@ -68,9 +68,21 @@
 
 Oira captura una consulta en el equipo del médico, transcribe el audio, estructura un borrador de nota y deja la corrección, la aceptación y la exportación en manos del clínico.
 
-El producto es una app **desktop local-first** para consulta ambulatoria: un médico, una computadora, una consulta a la vez. El acceso se abre con inicio de sesión de Google; no hay backend propio, no hay sincronización en la nube y no hay fallback silencioso a un proveedor remoto. Si la inferencia local falla, falla de forma visible.
+El producto es una app **desktop local-first** para consulta ambulatoria: un médico, una computadora, una consulta a la vez. En esta etapa de validación el flujo local puede abrirse sin autenticación; la integración con Google queda preparada para reactivarse. No hay backend propio, no hay sincronización en la nube y no hay fallback silencioso a un proveedor remoto. Si la inferencia local falla, falla de forma visible.
 
 Este repositorio es un monorepo pnpm. El único producto ejecutable hoy es el cliente Electron (`apps/desktop`). El nombre público del proyecto es **Oira** (`github.com/Abraham2106/Oira`).
+
+### Estado actual de la aplicación
+
+La versión actual incorpora el flujo local de extremo a extremo para validar una consulta sin depender de un servicio remoto:
+
+- La preparación de una consulta inicia el calentamiento de Whisper en segundo plano; el micrófono solo se solicita al pulsar **Grabar**.
+- `WHISPER_LARGE_V3_TURBO` permanece residente durante la sesión para evitar recargas entre transcripciones y se libera al cerrar la aplicación o al pasar al siguiente modelo.
+- La interfaz muestra el estado local de Whisper y deja explícito que Qwen3 todavía no está disponible en runtime.
+- La captura PCM elimina silencios periféricos y normaliza grabaciones con bajo volumen antes de enviarlas al transcriptor.
+- La sesión local puede validarse temporalmente sin el recorrido de Google; la integración OAuth permanece en el código para su reactivación posterior.
+
+Esta etapa sigue siendo un prototipo de validación. Los modelos descargados se guardan en una caché local ignorada por Git y no se incluyen pesos ni datos clínicos en el repositorio.
 
 ### Por qué existe Oira
 
@@ -336,7 +348,7 @@ La UI solo afirma conductas **verificables en esta versión**. *Local* no equiva
 
 Hechos actuales:
 
-- El acceso requiere inicio de sesión con Google (OAuth PKCE por el navegador del sistema); el procesamiento clínico permanece en el dispositivo.
+- El procesamiento clínico permanece en el dispositivo. OAuth PKCE con Google está integrado como camino de autenticación preparado, pero el flujo local de validación actual no lo exige.
 - Los encuentros viven en memoria; no hay SQLite de producción.
 - El audio temporal se guarda por consulta y se purga al generar o descartar.
 - El panel de Privacidad muestra `DESCONOCIDO` para procesamiento, red, almacenamiento y proveedor remoto hasta que Main confirme el hecho.
