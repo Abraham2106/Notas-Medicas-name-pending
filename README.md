@@ -36,7 +36,7 @@
 </div>
 
 > [!IMPORTANT]
-> Oira está en desarrollo activo para el track QVAC / Tether. El flujo completo de consulta —grabar, transcribir, estructurar, revisar y copiar— corre de extremo a extremo en el dispositivo: transcripción local con Whisper (QVAC) y estructuración heurística. Qwen3 está planeado y no está activo. El agente **documenta**; el médico **decide**. No diagnostica, no prescribe y no sustituye el juicio clínico. Antes de usarlo con información real, lee [privacidad y límites](#privacidad-y-límites).
+> Oira está en desarrollo activo. El flujo completo de consulta —grabar, transcribir, estructurar, revisar y copiar— corre de extremo a extremo en el dispositivo: transcripción local con Whisper (QVAC) y estructuración heurística. Qwen3 está planeado y no está activo. El agente **documenta**; el médico **decide**. No diagnostica, no prescribe y no sustituye el juicio clínico. Antes de usarlo con información real, lee [privacidad y límites](#privacidad-y-límites).
 
 <details>
   <summary><strong>Tabla de contenidos</strong></summary>
