@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Button } from "@oira/ui"
 import type { SectionId } from "@oira/types"
+import type { WhisperLifecycleState } from "../shared/types/model-lifecycle"
 import { formatNoteAsText } from "../shared/clinical-export"
-import type { AuthSessionState } from "../shared/types/auth-profile"
 import { getBridge } from "./bridge/oira"
 import { FlowStepper } from "./components/FlowStepper"
 import { Icon, type IconName } from "./components/icons"
+import { ModelDebugPanel, reduceModelDebugState } from "./components/ModelDebugPanel"
 import { flowStepFromState } from "./lib/consultFlow"
 import { pickTag, sampleHistory, type PatientHistoryEntry } from "./lib/patientTags"
 import { useI18n } from "./i18n/I18nProvider"
 import { DashboardScreen } from "./screens/Dashboard/Dashboard"
 import { ExportScreen } from "./screens/Export/Export"
 import { DeviceReadyScreen } from "./screens/DeviceReady/DeviceReady"
-import { LoginScreen } from "./screens/Login/Login"
 import { NewConsultationScreen } from "./screens/NewConsultation/NewConsultation"
 import { NotesListScreen } from "./screens/NotesList/NotesList"
 import { PatientsScreen } from "./screens/Patients/Patients"
@@ -20,6 +20,7 @@ import { ProcessingScreen } from "./screens/Processing/Processing"
 import { RecordingScreen } from "./screens/Recording/Recording"
 import { ReviewScreen } from "./screens/Review/Review"
 import { SettingsScreen } from "./screens/Settings/Settings"
+import { StartupScreen } from "./screens/Startup/Startup"
 import { TeamScreen } from "./screens/Team/Team"
 import { useEncounter } from "./state/useEncounter"
 
@@ -43,32 +44,42 @@ function typingTarget(target: EventTarget | null): boolean {
 export function App() {
   const { t } = useI18n()
   const encounter = useEncounter()
+  const [booting, setBooting] = useState(true)
+  const [modelDebug, setModelDebug] = useState<{
+    whisper: WhisperLifecycleState
+    qwenAvailable: boolean
+  }>({
+    whisper: "IDLE",
+    qwenAvailable: false,
+  })
   const [ready, setReady] = useState(false)
+  const [recorderPrepared, setRecorderPrepared] = useState(false)
   const [view, setView] = useState<View>("dashboard")
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [reviewConfirmed, setReviewConfirmed] = useState(false)
   const [activeSectionId, setActiveSectionId] = useState<SectionId | null>(null)
   const [highlightedIds, setHighlightedIds] = useState<string[]>([])
   const [history, setHistory] = useState<PatientHistoryEntry[]>(() => sampleHistory())
-  const [auth, setAuth] = useState<AuthSessionState>({
-    authenticated: false,
-    profile: null,
-  })
   const [copyError, setCopyError] = useState<string | null>(null)
   const recordedExportRef = useRef<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    getBridge()
-      .getAuthSession()
-      .then((session) => {
-        if (!cancelled) setAuth(session)
-      })
-      .catch(() => undefined)
+    const minimumVisible = new Promise<void>((resolve) => window.setTimeout(resolve, 4_500))
+    void Promise.all([
+      getBridge().getSettings().catch(() => undefined),
+      minimumVisible,
+    ]).finally(() => {
+      if (!cancelled) setBooting(false)
+    })
     return () => {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => getBridge().onModelLifecycle((event) => {
+    setModelDebug((current) => reduceModelDebugState(current, event))
+  }), [])
 
   const busy = BUSY_STATES.has(encounter.productState)
   const inReview = REVIEW_STATES.has(encounter.productState)
@@ -111,6 +122,7 @@ export function App() {
     resetReviewChrome()
     setSettingsOpen(false)
     encounter.reset()
+    setRecorderPrepared(false)
     setView("consult")
     setReady(true)
   }, [encounter, resetReviewChrome, t])
@@ -183,16 +195,11 @@ export function App() {
 
   const showFlow = ready && view === "consult"
 
-  if (!auth.authenticated) {
-    return (
-      <LoginScreen
-        onSignedIn={(profile) => setAuth({ authenticated: true, profile })}
-      />
-    )
-  }
+  if (booting) return <StartupScreen />
 
   return (
     <div className="shell">
+      <ModelDebugPanel {...modelDebug} />
       <aside className="sidenav">
         <div className="sidenav-brand">
           <strong className="wordmark">
@@ -305,17 +312,23 @@ export function App() {
             onLabel={encounter.setLabel}
             onVisitType={encounter.setVisitType}
             onInformed={encounter.setInformed}
-            onStart={() => void encounter.startRecording()}
+            onPrepare={() => {
+              encounter.prepareRecording()
+              setRecorderPrepared(true)
+            }}
           />
         ) : null}
 
-        {showFlow && encounter.productState === "RECORDING" && encounter.recordingStartedAt ? (
+        {showFlow && (encounter.productState === "RECORDING" || recorderPrepared) ? (
           <RecordingScreen
-            startedAtMs={encounter.recordingStartedAt}
+            isRecording={encounter.productState === "RECORDING"}
+            startedAtMs={encounter.recordingStartedAt ?? undefined}
+            onStart={() => void encounter.startRecording()}
             onStop={() => void encounter.stopRecording()}
             onDiscard={() => {
               resetReviewChrome()
               encounter.reset()
+              setRecorderPrepared(false)
             }}
           />
         ) : null}
@@ -386,8 +399,8 @@ export function App() {
 
         {ready && !settingsOpen && view === "team" ? (
           <TeamScreen
-            profile={auth.profile}
-            onSignedOut={() => setAuth({ authenticated: false, profile: null })}
+            profile={null}
+            onSignedOut={() => undefined}
           />
         ) : null}
       </div>

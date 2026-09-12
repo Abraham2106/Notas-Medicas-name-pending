@@ -23,6 +23,7 @@ type EncounterView = {
   setLabel: (value: string) => void
   setVisitType: (value: string) => void
   setInformed: (value: boolean) => void
+  prepareRecording: () => void
   startRecording: () => Promise<void>
   stopRecording: () => Promise<void>
   editNote: (sectionId: keyof ClinicalNote["sections"], text: string) => void
@@ -93,6 +94,12 @@ export function useEncounter(): EncounterView {
       fail("No se pudo iniciar la consulta.")
     }
   }, [apply, bridge, fail, label, visitType])
+
+  const prepareRecording = useCallback(() => {
+    // Loading is deliberately non-blocking: only the dedicated record button
+    // may request microphone access and create the encounter.
+    void bridge.warmTranscription().catch(() => undefined)
+  }, [bridge])
 
   const stopRecording = useCallback(async () => {
     if (!encounter) return
@@ -218,6 +225,7 @@ export function useEncounter(): EncounterView {
     setLabel,
     setVisitType,
     setInformed,
+    prepareRecording,
     startRecording,
     stopRecording,
     editNote,

@@ -10,7 +10,7 @@ type Props = {
   onLabel: (value: string) => void
   onVisitType: (value: string) => void
   onInformed: (value: boolean) => void
-  onStart: () => void
+  onPrepare: () => void
 }
 
 export function NewConsultationScreen({
@@ -20,7 +20,7 @@ export function NewConsultationScreen({
   onLabel,
   onVisitType,
   onInformed,
-  onStart,
+  onPrepare,
 }: Props) {
   const { t } = useI18n()
 
@@ -58,8 +58,8 @@ export function NewConsultationScreen({
           />
           {t("newConsult.consentLabel")}
         </label>
-        <Button variant="primary" onClick={onStart} disabled={!informed}>
-          {t("newConsult.startRecording")}
+        <Button variant="primary" onClick={onPrepare} disabled={!informed}>
+          {t("newConsult.prepareRecording")}
         </Button>
         <p className="muted">{t("newConsult.startHint")}</p>
       </Card>
