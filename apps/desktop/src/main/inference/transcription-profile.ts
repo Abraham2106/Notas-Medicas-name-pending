@@ -9,19 +9,9 @@ export type TranscriptionProfileInput = {
 }
 
 export type TranscriptionProfile = {
+  language: "es"
   minFreeBytes: number
   loadIdleTimeoutMs: number
-  sttConfig: {
-    language: "es"
-    translate: false
-    temperature: 0
-    suppress_blank: true
-    suppress_nst: true
-    no_context: true
-    no_timestamps: false
-    strategy: "beam_search"
-    beam_search_beam_size: 5
-  }
 }
 
 export type TranscriptionProfileResult =
@@ -31,33 +21,26 @@ export type TranscriptionProfileResult =
 export function resolveTranscriptionProfile(
   input: TranscriptionProfileInput,
 ): TranscriptionProfileResult {
-  if (input.freeMemBytes < MIN_FREE_BYTES) {
+  if (!Number.isFinite(input.freeMemBytes) || input.freeMemBytes < MIN_FREE_BYTES) {
     return { ok: false, code: "LOW_MEMORY" }
   }
 
   const requested = input.requestedTimeoutMs
   const parsed =
-    requested === undefined ? Number.NaN : Number(requested)
+    requested === undefined ||
+    (typeof requested === "string" && requested.trim() === "")
+      ? Number.NaN
+      : Number(requested)
   const loadIdleTimeoutMs = Number.isFinite(parsed)
-    ? Math.max(parsed, MIN_LOAD_IDLE_TIMEOUT_MS)
+    ? Math.min(Math.max(parsed, MIN_LOAD_IDLE_TIMEOUT_MS), 600_000)
     : DEFAULT_LOAD_IDLE_TIMEOUT_MS
 
   return {
     ok: true,
     profile: {
+      language: input.language,
       minFreeBytes: MIN_FREE_BYTES,
       loadIdleTimeoutMs,
-      sttConfig: {
-        language: input.language,
-        translate: false,
-        temperature: 0,
-        suppress_blank: true,
-        suppress_nst: true,
-        no_context: true,
-        no_timestamps: false,
-        strategy: "beam_search",
-        beam_search_beam_size: 5,
-      },
     },
   }
 }

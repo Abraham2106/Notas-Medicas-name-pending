@@ -1,4 +1,4 @@
-import { join } from "node:path"
+import { join, resolve } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
@@ -11,7 +11,7 @@ import {
 } from "./file-export.adapter"
 
 const ENCOUNTER_ID = "00000000-0000-4000-8000-000000000001"
-const EXPORT_DIR = "/exports"
+const EXPORT_DIR = resolve("oira-test-exports")
 
 async function storedNotes() {
   const notes = createMemoryNoteStore()
@@ -63,6 +63,43 @@ describe("file export adapter", () => {
       exportedAt: "2026-09-11T16:00:00.000Z",
       note: syntheticClinicalNote(),
     })
+  })
+
+  it("exports the latest accepted note when historical duplicates exist", async () => {
+    const notes = createMemoryNoteStore()
+    const first = syntheticClinicalNote()
+    const second = syntheticClinicalNote()
+    second.sections.clinical_narrative.text = "Contenido B."
+    await notes.save({
+      id: "00000000-0000-4000-8000-000000000002",
+      encounterId: ENCOUNTER_ID,
+      acceptedAt: "2026-09-11T12:00:00.000Z",
+      label: "",
+      visitType: "",
+      note: first,
+      transcript: [],
+    })
+    await notes.save({
+      id: "00000000-0000-4000-8000-000000000003",
+      encounterId: ENCOUNTER_ID,
+      acceptedAt: "2026-09-11T13:00:00.000Z",
+      label: "",
+      visitType: "",
+      note: second,
+      transcript: [],
+    })
+    const writer = createMemoryFileWriter()
+    const port = createFileExportAdapter({
+      notes,
+      writer,
+      exportDir: EXPORT_DIR,
+    })
+
+    await port.exportNote({ encounterId: ENCOUNTER_ID, format: "txt" })
+
+    expect(writer.files.get(join(EXPORT_DIR, `${ENCOUNTER_ID}.txt`))).toContain(
+      "Contenido B.",
+    )
   })
 
   it("rejects path-like encounter ids before touching the writer", async () => {

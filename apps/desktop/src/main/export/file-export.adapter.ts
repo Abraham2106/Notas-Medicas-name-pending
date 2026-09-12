@@ -1,4 +1,5 @@
 import * as fsp from "node:fs/promises"
+import { resolve } from "node:path"
 
 import {
   formatNoteAsJson,
@@ -7,6 +8,7 @@ import {
 import type { ExportNoteInput } from "../../shared/schemas/ipc.schema"
 import { exportFailedError, invalidExportInputError } from "../errors/export"
 import { safeJoin } from "../audio/safe-path"
+import { selectCurrentAcceptedNote } from "../storage/current-note"
 import type {
   Clock,
   FileWriterPort,
@@ -88,8 +90,9 @@ export function createFileExportAdapter(
         throw invalidExportInputError()
       }
 
-      const record = (await deps.notes.list()).find(
-        (candidate) => candidate.encounterId === input.encounterId,
+      const record = selectCurrentAcceptedNote(
+        await deps.notes.list(),
+        input.encounterId,
       )
       if (!record) {
         throw exportFailedError(
@@ -98,10 +101,11 @@ export function createFileExportAdapter(
         )
       }
 
-      const path = safeJoin(deps.exportDir, `${input.encounterId}.${input.format}`)
+      const exportRoot = resolve(deps.exportDir)
+      const path = safeJoin(exportRoot, `${input.encounterId}.${input.format}`)
       const contents = renderExport(input, record, clock)
       try {
-        await deps.writer.mkdir?.(deps.exportDir)
+        await deps.writer.mkdir?.(exportRoot)
         await deps.writer.writeFile(path, contents)
       } catch (error) {
         throw exportFailedError(error)

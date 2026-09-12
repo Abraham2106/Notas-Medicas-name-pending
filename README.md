@@ -146,6 +146,8 @@ Vista partida:
 
 La nota lleva el badge *Borrador — requiere revisión médica* hasta que el médico confirma y acepta. Solo entonces pasa a *Revisada por el médico*.
 
+Cada encuentro conserva una sola nota aceptada vigente; una aceptación posterior actualiza esa nota.
+
 ### Exportar
 
 La vista previa es exactamente el texto que se copia. Un aviso recuerda que lo pegado en otro sistema queda fuera de Oira. El PDF no forma parte de esta versión.

@@ -8,6 +8,8 @@ import {
   noteSaveNotImplementedError,
 } from "../errors/notes"
 import { verifySource } from "./verify-source"
+import { clinicalNoteSchema } from "../../shared/schemas/clinical.schema"
+import { selectCurrentAcceptedNote } from "../storage/current-note"
 import type { EncounterPort, NotesPort } from "../ports/inbound"
 import type {
   AudioCapturePort,
@@ -54,47 +56,68 @@ export function createNotesStub(_deps: NotesServiceDeps = {}): NotesPort {
 
 export function createNotesService(deps: NotesPipelineDeps): NotesPort {
   const drafts = new Map<string, GeneratedDraft>()
+  const saveChains = new Map<string, Promise<unknown>>()
   const createId = deps.createId ?? (() => crypto.randomUUID())
   const clock = deps.clock ?? systemClock
 
   return {
     async generate(encounterId) {
       const generated = await runGenerateNote(encounterId, deps)
-      drafts.set(encounterId, generated)
-      return generated
+      const stored = structuredClone(generated)
+      drafts.set(encounterId, stored)
+      return structuredClone(stored)
     },
     async save(input) {
-      if (input.clinicianConfirmed !== true) {
-        throw clinicianConfirmationRequiredError()
-      }
-      const record = deps.encounters
-        ? await deps.encounters.getById(input.encounterId)
-        : undefined
-      if (deps.encounters && !record) throw encounterNotFoundError()
+      const previous = saveChains.get(input.encounterId) ?? Promise.resolve()
+      const current = previous
+        .catch(() => undefined)
+        .then(async () => {
+          if (input.clinicianConfirmed !== true) {
+            throw clinicianConfirmationRequiredError()
+          }
+          const parsed = clinicalNoteSchema.safeParse(input.note)
+          if (!parsed.success) throw invalidStructuredOutputError()
+          const record = deps.encounters
+            ? await deps.encounters.getById(input.encounterId)
+            : undefined
+          if (deps.encounters && !record) throw encounterNotFoundError()
 
-      const noteId = createId()
-      const draft = drafts.get(input.encounterId)
-      if (!draft) throw noteDraftRequiredError()
-      if (!verifySource(input.note, draft.transcript)) {
-        throw invalidStructuredOutputError()
-      }
-      if (deps.notes) {
-        await deps.notes.save({
-          id: noteId,
-          encounterId: input.encounterId,
-          acceptedAt: clock.nowIso(),
-          label: record?.label ?? "",
-          visitType: record?.visitType ?? "",
-          note: input.note,
-          transcript: draft.transcript,
+          const draft = drafts.get(input.encounterId)
+          if (!draft) throw noteDraftRequiredError()
+          const transcript = structuredClone(draft.transcript)
+          if (!verifySource(parsed.data, transcript)) {
+            throw invalidStructuredOutputError()
+          }
+          if (!deps.notes) throw noteSaveNotImplementedError()
+          const existing = selectCurrentAcceptedNote(
+            await deps.notes.list(),
+            input.encounterId,
+          )
+          const noteId = existing?.id ?? createId()
+          await deps.notes.save({
+            id: noteId,
+            encounterId: input.encounterId,
+            acceptedAt: clock.nowIso(),
+            label: record?.label ?? existing?.label ?? "",
+            visitType: record?.visitType ?? existing?.visitType ?? "",
+            note: structuredClone(parsed.data),
+            transcript,
+          })
+          drafts.set(input.encounterId, {
+            transcript: structuredClone(transcript),
+            note: structuredClone(parsed.data),
+          })
+          await settleDrafted(deps.encounters, input.encounterId)
+          return { noteId }
         })
+      saveChains.set(input.encounterId, current)
+      try {
+        return await current
+      } finally {
+        if (saveChains.get(input.encounterId) === current) {
+          saveChains.delete(input.encounterId)
+        }
       }
-      drafts.set(input.encounterId, {
-        transcript: draft.transcript,
-        note: input.note,
-      })
-      await settleDrafted(deps.encounters, input.encounterId)
-      return { noteId }
     },
   }
 }

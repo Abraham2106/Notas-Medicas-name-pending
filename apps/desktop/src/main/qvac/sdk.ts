@@ -1,5 +1,6 @@
 /** The only production module that may import `@qvac/sdk`. */
 export {
+  cancel,
   close,
   loadModel,
   transcribe,

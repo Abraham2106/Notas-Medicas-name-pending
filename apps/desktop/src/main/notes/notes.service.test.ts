@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { syntheticClinicalNote } from "../../shared/fixtures/synthetic-consult"
 import { invalidStructuredOutputError } from "../errors/notes"
 import { createNotesService } from "./notes.service"
@@ -175,10 +175,12 @@ describe("createNotesService", () => {
 
   it("marks a successful generate as transcribed and save as drafted", async () => {
     const { repository, encounterId } = await recordingEncounter()
+    const store = createMemoryNoteStore()
     const notes = createNotesService({
       transcription: createMockTranscription(),
       structuring: createMockStructuring(),
       encounters: createEncounterService({ repository }),
+      notes: store,
     })
     const generated = await notes.generate(encounterId)
     expect((await repository.getById(encounterId))?.status).toBe("transcribed")
@@ -208,6 +210,101 @@ describe("createNotesService", () => {
     expect(stored?.transcript).toEqual(generated.transcript)
   })
 
+  it("updates one accepted note when the clinician accepts again", async () => {
+    const { repository, encounterId } = await recordingEncounter()
+    const store = createMemoryNoteStore()
+    const notes = createNotesService({
+      transcription: createMockTranscription(),
+      structuring: createMockStructuring(),
+      encounters: createEncounterService({ repository }),
+      notes: store,
+      createId: () => "stable-note-id",
+      clock: { nowIso: () => "2026-09-11T12:00:00.000Z" },
+    })
+    const generated = await notes.generate(encounterId)
+    const first = await notes.save({
+      encounterId,
+      note: generated.note,
+      clinicianConfirmed: true,
+    })
+    const secondNote = structuredClone(generated.note)
+    secondNote.sections.clinical_narrative.text = "Contenido editado."
+    const second = await notes.save({
+      encounterId,
+      note: secondNote,
+      clinicianConfirmed: true,
+    })
+
+    expect(second.noteId).toBe(first.noteId)
+    const stored = await store.list()
+    expect(stored).toHaveLength(1)
+    expect(stored[0]?.note.sections.clinical_narrative.text).toBe(
+      "Contenido editado.",
+    )
+  })
+
+  it("serializes concurrent accepts for one encounter", async () => {
+    const store = createMemoryNoteStore()
+    const notes = createNotesService({
+      transcription: createMockTranscription(),
+      structuring: createMockStructuring(),
+      notes: store,
+      createId: (() => {
+        let count = 0
+        return () => `note-${++count}`
+      })(),
+    })
+    const generated = await notes.generate(ENCOUNTER)
+    const [first, second] = await Promise.all([
+      notes.save({ encounterId: ENCOUNTER, note: generated.note, clinicianConfirmed: true }),
+      notes.save({ encounterId: ENCOUNTER, note: generated.note, clinicianConfirmed: true }),
+    ])
+
+    expect(second.noteId).toBe(first.noteId)
+    expect((await store.list()).filter((record) => record.encounterId)).toHaveLength(1)
+  })
+
+  it("rejects an invalid note shape at the service boundary", async () => {
+    const store = createMemoryNoteStore()
+    const notes = createNotesService({
+      transcription: createMockTranscription(),
+      structuring: createMockStructuring(),
+      notes: store,
+    })
+    await notes.generate(ENCOUNTER)
+    await expect(
+      notes.save({
+        encounterId: ENCOUNTER,
+        note: { sections: {} } as never,
+        clinicianConfirmed: true,
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_STRUCTURED_OUTPUT" })
+    expect(await store.list()).toHaveLength(0)
+  })
+
+  it("does not report success when storage fails", async () => {
+    const notes = createNotesService({
+      transcription: createMockTranscription(),
+      structuring: createMockStructuring(),
+      notes: {
+        save: vi.fn(async () => {
+          throw new Error("disk full")
+        }),
+        list: vi.fn(async () => []),
+        get: vi.fn(async () => null),
+        remove: vi.fn(async () => undefined),
+      },
+    })
+    await notes.generate(ENCOUNTER)
+    await expect(
+      notes.save({
+        encounterId: ENCOUNTER,
+        note: syntheticClinicalNote(),
+        clinicianConfirmed: true,
+      }),
+    ).rejects.toThrow("disk full")
+  })
+
   it("rejects save without clinician confirmation", async () => {
     const notes = createNotesService({
       transcription: createMockTranscription(),
@@ -225,9 +322,15 @@ describe("createNotesService", () => {
 
   it("rejects save for a missing encounter", async () => {
     let present = true
+    const save = vi.fn(async () => undefined)
+    const store = {
+      ...createMemoryNoteStore(),
+      save,
+    }
     const notes = createNotesService({
       transcription: createMockTranscription(),
       structuring: createMockStructuring(),
+      notes: store,
       encounters: {
         async start() {
           return { encounterId: ENCOUNTER, startedAt: "" }
@@ -262,12 +365,14 @@ describe("createNotesService", () => {
         clinicianConfirmed: true,
       }),
     ).rejects.toMatchObject({ code: "INVALID_STATE_TRANSITION" })
+    expect(save).not.toHaveBeenCalled()
   })
 
   it("rejects save without a prior generate", async () => {
     const notes = createNotesService({
       transcription: createMockTranscription(),
       structuring: createMockStructuring(),
+      notes: createMemoryNoteStore(),
     })
     await expect(
       notes.save({
@@ -278,10 +383,67 @@ describe("createNotesService", () => {
     ).rejects.toMatchObject({ code: "INVALID_STATE_TRANSITION" })
   })
 
+  it("does not report success when no note store is wired", async () => {
+    const notes = createNotesService({
+      transcription: createMockTranscription(),
+      structuring: createMockStructuring(),
+    })
+    await notes.generate(ENCOUNTER)
+    await expect(
+      notes.save({
+        encounterId: ENCOUNTER,
+        note: syntheticClinicalNote(),
+        clinicianConfirmed: true,
+      }),
+    ).rejects.toMatchObject({ code: "NOT_IMPLEMENTED" })
+  })
+
+  it("does not let callers mutate the canonical draft transcript", async () => {
+    const store = createMemoryNoteStore()
+    const notes = createNotesService({
+      transcription: createMockTranscription(),
+      structuring: createMockStructuring(),
+      notes: store,
+    })
+    const generated = await notes.generate(ENCOUNTER)
+    const firstSegment = generated.transcript[0]
+    expect(firstSegment).toBeDefined()
+    if (!firstSegment) return
+    firstSegment.id = "mutated"
+    firstSegment.text = "tampered"
+    const saved = await notes.save({
+      encounterId: ENCOUNTER,
+      note: generated.note,
+      clinicianConfirmed: true,
+    })
+    const stored = await store.get(saved.noteId)
+    expect(stored?.transcript[0]?.id).toBe("seg-1")
+    expect(stored?.transcript[0]?.text).not.toBe("tampered")
+  })
+
+  it("accepts a note when section reviewed flags remain false", async () => {
+    const store = createMemoryNoteStore()
+    const notes = createNotesService({
+      transcription: createMockTranscription(),
+      structuring: createMockStructuring(),
+      notes: store,
+    })
+    const generated = await notes.generate(ENCOUNTER)
+    expect(generated.note.sections.visit_context.reviewed).toBe(false)
+    await expect(
+      notes.save({
+        encounterId: ENCOUNTER,
+        note: generated.note,
+        clinicianConfirmed: true,
+      }),
+    ).resolves.toMatchObject({ noteId: expect.any(String) })
+  })
+
   it("rejects save when the note cites a missing draft segment", async () => {
     const notes = createNotesService({
       transcription: createMockTranscription(),
       structuring: createMockStructuring(),
+      notes: createMemoryNoteStore(),
     })
     await notes.generate(ENCOUNTER)
     const broken = syntheticClinicalNote()

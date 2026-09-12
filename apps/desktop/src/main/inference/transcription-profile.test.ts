@@ -26,9 +26,15 @@ describe("resolveTranscriptionProfile", () => {
 
   it.each([
     [undefined, 120_000],
+    ["", 120_000],
+    ["   ", 120_000],
+    ["not-a-number", 120_000],
+    [Number.NaN, 120_000],
+    [Number.POSITIVE_INFINITY, 120_000],
+    [-1, 10_000],
     [5000, 10_000],
     [180_000, 180_000],
-    ["not-a-number", 120_000],
+    [900_000, 600_000],
   ])("resolves timeout %s to %s", (requestedTimeoutMs, expected) => {
     const result = resolveTranscriptionProfile({
       ...baseInput,
@@ -39,4 +45,13 @@ describe("resolveTranscriptionProfile", () => {
       profile: { loadIdleTimeoutMs: expected },
     })
   })
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -1])(
+    "rejects invalid memory %s",
+    (freeMemBytes) => {
+      expect(
+        resolveTranscriptionProfile({ ...baseInput, freeMemBytes }),
+      ).toEqual({ ok: false, code: "LOW_MEMORY" })
+    },
+  )
 })
