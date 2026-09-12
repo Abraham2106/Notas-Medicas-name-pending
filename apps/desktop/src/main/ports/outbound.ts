@@ -4,7 +4,7 @@ import type { InferenceProgress } from "../../shared/types/inference-progress"
 
 /**
  * Driven (outbound) ports. Application code depends on these abstractions;
- * adapters in audio/, stt/, structure/, storage/, qvac/, inference/ implement them.
+ * adapters in audio/, structure/, storage/, qvac/, inference/ implement them.
  */
 
 export type Clock = {
@@ -58,5 +58,4 @@ export type {
   TranscriptionPort,
   TranscriptionResult,
 } from "../inference/port"
-export type { AudioChunk, SttPort, SttResult } from "../stt/stt.types"
 export type { NoteStorePort, StoredNoteRecord } from "../storage/storage.types"

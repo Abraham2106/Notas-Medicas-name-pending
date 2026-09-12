@@ -8,7 +8,6 @@ export type {
 } from "./inbound"
 export type {
   AudioCapturePort,
-  AudioChunk,
   ClipboardPort,
   Clock,
   EncounterRepository,
@@ -22,8 +21,6 @@ export type {
   StructuringInput,
   StructuringPort,
   StructuringResult,
-  SttPort,
-  SttResult,
   TranscriptionInput,
   TranscriptionPort,
   TranscriptionResult,
