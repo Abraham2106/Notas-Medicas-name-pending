@@ -36,7 +36,7 @@
 </div>
 
 > [!IMPORTANT]
-> Oira está en desarrollo activo para el track QVAC / Tether. El flujo completo de consulta —grabar, transcribir, estructurar, revisar y copiar— corre de extremo a extremo con inferencia local en el dispositivo. El agente **documenta**; el médico **decide**. No diagnostica, no prescribe y no sustituye el juicio clínico. Antes de usarlo con información real, lee [privacidad y límites](#privacidad-y-límites).
+> Oira está en desarrollo activo para el track QVAC / Tether. El flujo completo de consulta —grabar, transcribir, estructurar, revisar y copiar— corre de extremo a extremo en el dispositivo: transcripción local con Whisper (QVAC) y estructuración heurística. Qwen3 está planeado y no está activo. El agente **documenta**; el médico **decide**. No diagnostica, no prescribe y no sustituye el juicio clínico. Antes de usarlo con información real, lee [privacidad y límites](#privacidad-y-límites).
 
 <details>
   <summary><strong>Tabla de contenidos</strong></summary>
@@ -79,7 +79,7 @@ Un scribe genérico puede generar texto, pero suele mezclar lo dicho con lo plau
 - **El borrador no es la nota.** Nada se da por aceptado hasta que el médico revisa y confirma.
 - **La ausencia es un dato válido.** Si algo no se dijo, la sección queda en *No consta en la consulta* o *Sin determinar*; no se rellena con una conclusión verosímil.
 - **Cada campo puede mostrar su origen.** Las secciones enlazan fragmentos de la transcripción para que la revisión no dependa de la memoria.
-- **La inferencia permanece en el dispositivo.** Transcripción (Whisper) y estructuración (Qwen3) corren por QVAC en el proceso Main de Electron.
+- **La inferencia permanece en el dispositivo.** La transcripción (Whisper) corre por QVAC en el proceso Main de Electron. La estructuración actual es heurística y determinística; Qwen3 600M está planeado y no está activo.
 - **Exportar es una decisión explícita.** Copiar al portapapeles saca el contenido de Oira; el destino tiene sus propias prácticas.
 
 ### Construido con
@@ -92,9 +92,9 @@ Un scribe genérico puede generar texto, pero suele mezclar lo dicho con lo plau
 | [electron-vite](https://electron-vite.org) | Bundles de desarrollo y producción. |
 | [Zod](https://zod.dev) | Validación en el borde IPC y del schema clínico. |
 | [Vitest](https://vitest.dev) | Pruebas unitarias y evaluación de casos. |
-| [QVAC (`@qvac/sdk` 0.17.1)](https://docs.qvac.tether.io/) | Inferencia local: STT y completion estructurada. |
+| [QVAC (`@qvac/sdk` 0.17.1)](https://docs.qvac.tether.io/) | Inferencia local: STT (Whisper) implementado; completion estructurada con Qwen3 pendiente. |
 | [Whisper Small Q8](https://docs.qvac.tether.io/ai-capabilities/transcription) | Transcripción en español, sin diarización en P0. |
-| [Qwen3 600M Instruct Q4](https://docs.qvac.tether.io/) | Extracción JSON de las siete secciones de la nota. |
+| [Qwen3 600M Instruct Q4](https://docs.qvac.tether.io/) | Objetivo P0 para extracción JSON de las siete secciones. Planeado; no activo en runtime. |
 
 ## Capacidades principales
 
@@ -110,7 +110,7 @@ Un scribe genérico puede generar texto, pero suele mezclar lo dicho con lo plau
 | **Evidencia de origen** | Un campo puede resaltar los segmentos de transcripción que lo sustentan. |
 | **Exportación mínima** | Vista previa exacta y copia al portapapeles. PDF, firma e integración EHR quedan fuera de esta versión. |
 | **Privacidad observable** | El panel de estado muestra hechos confirmados o `DESCONOCIDO`; no rellena con promesas. |
-| **Adaptador intercambiable** | QVAC por defecto en Electron; `NOTALOCAL_INFERENCE=mock` y los tests usan el puente sintético. |
+| **Adaptador intercambiable** | QVAC por defecto en Electron (Whisper + estructuración heurística); `OIRA_INFERENCE` o el alias legado `NOTALOCAL_INFERENCE=mock`, y los tests usan el puente sintético. |
 
 ## Experiencia del producto
 
@@ -174,7 +174,7 @@ Médico
   └── Main (backend local)
         ├── encounters + audio temporal (WAV/PCM)
         ├── transcription  → Whisper (QVAC)
-        ├── structuring    → Qwen3 JSON schema (QVAC)
+        ├── structuring    → ensamblador heurístico + glosario (Qwen3 pendiente)
         ├── verify-source  → IDs de segmento deben existir
         └── export         → copia en el renderer; stub de archivo
 ```
@@ -184,7 +184,7 @@ El flujo de una consulta es:
 1. Confirmar el aviso al paciente y empezar el encuentro.
 2. Capturar audio en el renderer y enviarlo por `appendAudio` en secuencia.
 3. Al detener, finalizar el WAV temporal y transcribir en el dispositivo.
-4. Extraer las siete secciones con JSON schema; reintentar una vez si el schema es inválido.
+4. Armar las siete secciones con el ensamblador heurístico; validar el schema clínico y reintentar una vez si es inválido.
 5. Rechazar notas cuyos `sourceSegmentIds` no existan en la transcripción.
 6. Mostrar el borrador junto a la transcripción para edición y aceptación.
 7. Copiar el texto aceptado; purgar el audio temporal de esa consulta.
@@ -198,7 +198,7 @@ El renderer **nunca** importa `@qvac/sdk`. El único módulo de producción que 
 - Node.js `22.17` o posterior (host y runtime embebido de Electron).
 - [pnpm](https://pnpm.io/) `10` (fijado en `packageManager` del `package.json` raíz). La instalación de dependencias la hace pnpm; para arrancar sirve cualquier runner (`npm run dev` o `pnpm dev`).
 - Un micrófono, si vas a grabar una consulta real.
-- Disco y RAM suficientes para descargar y cargar los modelos QVAC en la primera ejecución local. El tiempo depende del audio, el modelo y el equipo; este README no publica cifras de latencia.
+- Disco y RAM suficientes para descargar y cargar Whisper (QVAC) en la primera ejecución local. El tiempo depende del audio, el modelo y el equipo; este README no publica cifras de latencia.
 
 ### 1. Clonar y arrancar (un solo comando)
 
@@ -223,8 +223,9 @@ El renderer de Vite queda en `http://localhost:5173/`; la app habla con Main a t
 
 | Variable | Efecto |
 |---|---|
-| *(sin definir)* | En Electron, usa **QVAC** (Whisper + Qwen3). |
-| `NOTALOCAL_INFERENCE=mock` | Transcripción y nota sintéticas. Útil para UI sin modelos. |
+| *(sin definir)* | En Electron, usa **QVAC**: Whisper local + estructuración heurística. Qwen3 no está activo. |
+| `OIRA_INFERENCE=mock` | Transcripción y nota sintéticas. Útil para UI sin modelos. |
+| `NOTALOCAL_INFERENCE=mock` | Alias legado de `OIRA_INFERENCE`. El código lee `OIRA_INFERENCE` primero. |
 | `NODE_ENV=test` | Fuerza mock, aunque pidas QVAC. |
 
 Ejemplo mock:
@@ -268,7 +269,7 @@ Si el preload no está disponible (por ejemplo, abriendo solo el renderer en el 
 
 ### Consulta con inferencia local
 
-Con el adaptador QVAC, el Main carga Whisper, transcribe el WAV de la consulta, lo descarga, carga Qwen3, extrae JSON y valida el schema. Los modelos no quedan residentes entre consultas.
+Con el adaptador QVAC, el Main carga Whisper, transcribe el WAV de la consulta, lo descarga y cierra el SDK. La nota se arma con un ensamblador heurístico; después se valida el schema clínico y los IDs de evidencia, con independencia del motor de estructuración. Whisper no queda residente entre consultas. Qwen3 no se carga.
 
 ### Recorrido de interfaz sin modelos
 
@@ -312,7 +313,8 @@ Reglas de representación:
 | Pieza | Default P0 | Notas |
 |---|---|---|
 | STT | `WHISPER_SMALL_Q8_0` | Multilingüe con `language: "es"`. No hay small fine-tuneado solo a español. |
-| LLM | `QWEN3_600M_INST_Q4` | JSON schema de las siete secciones. |
+| Estructuración | Heurística + glosario | Determinística. Valida schema clínico y `sourceSegmentIds` con independencia del motor. |
+| LLM | `QWEN3_600M_INST_Q4` | Constante de catálogo. Planeado; no se carga ni se usa en runtime. |
 | Modelos grandes | No se cargan | 1.7B / 4B y Whisper large quedan fuera del catálogo P0 por consumo de RAM. |
 | Diarización | No en P0 | `speaker` queda `null` hasta una asignación humana. |
 | Fallback cloud | Prohibido | Un fallo se muestra; no se reenvía audio a una API. |
@@ -393,7 +395,9 @@ Implementado:
 - [x] Flujo completo de consulta con stepper y atajos.
 - [x] Aviso al paciente antes de grabar (no es consentimiento legal).
 - [x] Captura de micrófono PCM 16 kHz y almacén temporal de audio.
-- [x] Adaptador QVAC: Whisper Small + Qwen3 600M con JSON schema.
+- [x] Adaptador QVAC: Whisper Small para transcripción local.
+- [x] Estructuración heurística con validación de schema clínico y evidencia de origen.
+- [ ] Adaptador Qwen3 600M para extracción JSON (planeado; no activo).
 - [x] Adaptador mock para tests y desarrollo sin modelos.
 - [x] Inicio de sesión con Google (OAuth PKCE por navegador del sistema).
 - [x] Shell con panel lateral: Dashboard, Notas, Pacientes y Equipo.
@@ -442,6 +446,6 @@ Este repositorio **aún no publica un archivo `LICENSE`**. No asumas MIT ni otro
 
 ## Agradecimientos
 
-Oira se construye sobre [Electron](https://www.electronjs.org), [React](https://react.dev), [TypeScript](https://www.typescriptlang.org), [QVAC](https://docs.qvac.tether.io/) (Tether), Whisper y Qwen3.
+Oira se construye sobre [Electron](https://www.electronjs.org), [React](https://react.dev), [TypeScript](https://www.typescriptlang.org), [QVAC](https://docs.qvac.tether.io/) (Tether) y Whisper. Qwen3 está previsto y no está conectado.
 
 <p align="right"><a href="#readme-top">Volver arriba ↑</a></p>
