@@ -77,8 +77,10 @@ Este repositorio es un monorepo pnpm. El único producto ejecutable hoy es el cl
 La versión actual incorpora el flujo local de extremo a extremo para validar una consulta sin depender de un servicio remoto:
 
 - La preparación de una consulta inicia el calentamiento de Whisper en segundo plano; el micrófono solo se solicita al pulsar **Grabar**.
-- `WHISPER_LARGE_V3_TURBO` permanece residente durante la sesión para evitar recargas entre transcripciones y se libera al cerrar la aplicación o al pasar al siguiente modelo.
-- La interfaz muestra el estado, dispositivo seleccionado y fallback de Whisper y Qwen3.
+- `WHISPER_LARGE_V3_TURBO` se descarga antes de cargar Qwen3 4B Q4_K_M; al preparar otra consulta se libera Qwen antes de volver a cargar Whisper.
+- La interfaz muestra estados de Whisper y Qwen en un indicador desplegable, con dispositivo solicitado y evidencia efectiva cuando el backend la reporta.
+- La transcripción se presenta durante la estructuración sin detener el handoff; si falla Qwen, el texto permanece disponible.
+- El inicio de grabación muestra **Iniciando…** y la revisión ofrece secciones compactas, búsqueda y confirmación explícita.
 - La captura PCM elimina silencios periféricos y normaliza grabaciones con bajo volumen antes de enviarlas al transcriptor.
 - La sesión local de validación no exige login; la integración OAuth permanece disponible como camino opcional.
 
@@ -91,7 +93,7 @@ Un scribe genérico puede generar texto, pero suele mezclar lo dicho con lo plau
 - **El borrador no es la nota.** Nada se da por aceptado hasta que el médico revisa y confirma.
 - **La ausencia es un dato válido.** Si algo no se dijo, la sección queda en *No consta en la consulta* o *Sin determinar*; no se rellena con una conclusión verosímil.
 - **Cada campo puede mostrar su origen.** Las secciones enlazan fragmentos de la transcripción para que la revisión no dependa de la memoria.
-- **La inferencia permanece en el dispositivo.** Whisper y Qwen3 corren por QVAC en el proceso Main de Electron. La estructuración es determinística en sus parámetros, valida el JSON y no acepta evidencia que no exista en la transcripción.
+- **La inferencia permanece en el dispositivo.** Whisper y Qwen3 corren por QVAC en el proceso Main de Electron. La salida del generador se normaliza de forma permisiva; comprobar que un ID de fuente exista no demuestra que respalde el texto. La validación semántica fuerte sigue pendiente.
 - **Exportar es una decisión explícita.** Copiar al portapapeles saca el contenido de Oira; el destino tiene sus propias prácticas.
 
 ### Construido con
@@ -106,8 +108,7 @@ Un scribe genérico puede generar texto, pero suele mezclar lo dicho con lo plau
 | [Vitest](https://vitest.dev) | Pruebas unitarias y evaluación de casos. |
 | [QVAC (`@qvac/sdk` 0.18.2)](https://docs.qvac.tether.io/) | Runtime local para cargar modelos, consultar recursos del sistema, transcribir y generar completions. |
 | [Whisper Large V3 Turbo](https://docs.qvac.tether.io/ai-capabilities/transcription) | STT en español con preprocesamiento PCM, selección dinámica de GPU y sin diarización automática. |
-| [Qwen3 1.7B Instruct Q4](https://docs.qvac.tether.io/) | Estructuración local en JSON con temperatura cero, schema clínico, chunks, reparación y verificación de evidencia. |
-| [Zod](https://zod.dev) | Validación de entradas IPC, notas clínicas y salidas estructuradas. |
+| [Qwen3 4B Q4_K_M](https://docs.qvac.tether.io/) | Generación local de borradores, chunks y normalización permisiva a siete secciones; validación semántica pendiente. |
 | Almacenamiento en memoria / JSON | Encuentros en memoria; notas aceptadas pueden persistirse en un archivo JSON cuando se configura `notesFile`. |
 
 ## Capacidades principales
@@ -151,6 +152,11 @@ Dos fases visibles, sin porcentajes ni ETAs inventados:
 
 El copy describe el estado (*Transcribiendo la consulta en este equipo* / *Organizando la nota*), no un tiempo de entrega.
 
+Al terminar Whisper, aparece la transcripción con presentación progresiva,
+opción **Mostrar todo** y respeto a movimiento reducido. Es texto ya recibido,
+no reconocimiento en streaming. Qwen trabaja sin esperar esa animación. Si
+falla la estructuración, se conserva la transcripción y se identifica esa etapa.
+
 ### Revisión
 
 Vista partida:
@@ -158,7 +164,7 @@ Vista partida:
 - **Izquierda:** borrador con las siete secciones, badges de ausencia y control de “revisado”.
 - **Derecha:** transcripción. Pulsar un origen resalta el fragmento literal.
 
-La nota lleva el badge *Borrador — requiere revisión médica* hasta que el médico confirma y acepta. Solo entonces pasa a *Revisada por el médico*.
+La nota lleva el badge *Borrador — revise cada sección* hasta que el médico confirma y acepta. Solo entonces pasa a *Revisada por el médico*.
 
 Cada encuentro conserva una sola nota aceptada vigente; una aceptación posterior actualiza esa nota.
 
@@ -190,7 +196,7 @@ Médico
   └── Main (backend local)
         ├── encounters + audio temporal (WAV/PCM)
         ├── transcription  → Whisper (QVAC)
-        ├── structuring    → Qwen3 local + schema, chunks y verificación de evidencia
+        ├── structuring    → Qwen3 4B local + chunks y normalización permisiva
         ├── verify-source  → IDs de segmento deben existir
         └── export         → TXT/JSON mediante adaptador de archivo; copia al portapapeles
 ```
@@ -200,7 +206,7 @@ El flujo de una consulta es:
 1. Confirmar el aviso al paciente y empezar el encuentro.
 2. Capturar audio en el renderer y enviarlo por `appendAudio` en secuencia.
 3. Al detener, finalizar el WAV temporal y transcribir en el dispositivo.
-4. Generar las siete secciones con Qwen3; dividir consultas extensas, reparar JSON truncado o inválido y validar el schema clínico.
+4. Descargar Whisper y cargar Qwen3 4B; dividir consultas extensas y normalizar la salida a siete secciones. Puede conservarse texto no JSON como borrador; no es validación estricta de evidencia.
 5. Rechazar notas cuyos `sourceSegmentIds` no existan en la transcripción.
 6. Mostrar el borrador junto a la transcripción para edición y aceptación.
 7. Guardar la nota aceptada, exportarla como TXT/JSON o copiarla al portapapeles; purgar el audio temporal de esa consulta.
@@ -239,7 +245,7 @@ El renderer de Vite queda en `http://localhost:5173/`; la app habla con Main a t
 
 | Variable | Efecto |
 |---|---|
-| *(sin definir)* | En Electron, usa **QVAC**: Whisper Large V3 Turbo + Qwen3 1.7B local. |
+| *(sin definir)* | En Electron, usa **QVAC**: Whisper Large V3 Turbo + Qwen3 4B Q4_K_M local. |
 | `OIRA_INFERENCE=mock` | Transcripción y nota sintéticas. Útil para UI sin modelos. |
 | `NOTALOCAL_INFERENCE=mock` | Alias legado de `OIRA_INFERENCE`. El código lee `OIRA_INFERENCE` primero. |
 | `NODE_ENV=test` | Fuerza mock, aunque pidas QVAC. |
@@ -284,7 +290,7 @@ Si el preload no está disponible (por ejemplo, abriendo solo el renderer en el 
 
 ### Consulta con inferencia local
 
-Con el adaptador QVAC, el Main selecciona la GPU disponible, mantiene Whisper residente durante la sesión, transcribe el WAV y pasa el control a Qwen3 después de descargar Whisper. Qwen3 divide transcripciones largas en chunks, genera JSON con schema estricto, repara respuestas inválidas y verifica que cada evidencia apunte a segmentos reales. Un fallo queda visible y no activa un fallback remoto.
+Con el adaptador QVAC, Main elige una GPU mediante heurísticas de recursos, transcribe el WAV y carga Qwen3 después de descargar Whisper. La transcripción aparece mientras Qwen divide el texto en chunks y genera el borrador. Se intenta parsear JSON y se normaliza la salida de forma permisiva, incluso con texto de respaldo. Los helpers de evidencia aún no comprueban fidelidad semántica. Un fallo operativo queda visible y no activa un fallback remoto.
 
 ### Recorrido de interfaz sin modelos
 
@@ -301,7 +307,8 @@ Scripts de laboratorio en el paquete desktop:
 | `pnpm --filter oira-desktop qvac:smoke` | Comprueba carga mínima del SDK. |
 | `pnpm --filter oira-desktop qvac:whisper` | Transcripción Whisper de prueba. |
 | `pnpm --filter oira-desktop qvac:record` | Captura de audio de laboratorio. |
-| `node apps/desktop/scripts/qvac-qwen.mjs` | Smoke manual de carga y completion de Qwen3. |
+| `pnpm --filter oira-desktop qvac:qwen` | Smoke manual de carga y completion de Qwen3 4B; solicita GPU 1. |
+| `node apps/desktop/scripts/qvac-gpu-probe.mjs 1` | Probe local de GPU/Qwen con logs del backend y memoria vía `nvidia-smi`; requiere NVIDIA y no es un selector portable. |
 
 ## Nota clínica y revisión
 
@@ -328,13 +335,13 @@ Reglas de representación:
 
 | Pieza | Default P0 | Notas |
 |---|---|---|
-| STT | `WHISPER_LARGE_V3_TURBO` | Whisper.cpp con `language: "es"`; el runtime selecciona la GPU preferida desde la enumeración de QVAC y expone fallback a CPU. |
-| Estructuración | `QWEN3_1_7B_INST_Q4` | Completion local determinística con temperatura cero, salida JSON, chunks, reparación y validación de evidencia. |
-| Modelos grandes | Carga secuencial | Whisper se descarga antes de cargar Qwen3; Qwen3 4B y Parakeet permanecen fuera del flujo P0. |
+| STT | `WHISPER_LARGE_V3_TURBO` | Whisper.cpp con `language: "es"`; solicita GPU mediante la selección heurística del runtime. |
+| Estructuración | `QWEN3_4B_Q4_K_M` | Temperatura cero, chunks y normalización permisiva; no garantiza salida estricta ni fidelidad de evidencia. |
+| Modelos grandes | Carga secuencial | Whisper se descarga antes de Qwen; Qwen se libera al preparar otra consulta. Parakeet no forma parte del flujo activo. |
 | Diarización | No en P0 | `speaker` queda `null` hasta una asignación humana. |
 | Fallback cloud | Prohibido | Un fallo se muestra; no se reenvía audio a una API. |
 
-La descarga desatendida de modelos está permitida en desarrollo, no en el binario empaquetado. La selección de GPU es dinámica; si QVAC no reporta una GPU compatible, el runtime deja constancia del fallback. No publiques tiempos de latencia hasta tener mediciones reproducibles (ver [I10](docs/research/I10-R9-I14-publishable-performance-and-requirements.md)).
+La descarga desatendida de modelos está permitida en desarrollo, no en el binario empaquetado. El selector utiliza VRAM y heurísticas de nombres e infiere índices del backend; su portabilidad no está demostrada. No hay selección explícita CPU/GPU por capacidades ni debe inferirse el dispositivo efectivo del solicitado. No publiques tiempos de latencia hasta tener mediciones reproducibles (ver [I10](docs/research/I10-R9-I14-publishable-performance-and-requirements.md)).
 
 ## Privacidad y límites
 
@@ -398,6 +405,9 @@ Oira/
 | [Plan backend](docs/BACKEND_AGILE_DELIVERABLE.md) | Iteraciones de Main sin improvisar la API. |
 | [Electron desde cero](docs/ELECTRON_GETTING_STARTED.md) | Main / Preload / Renderer para quien no haya usado Electron. |
 | [IA / QVAC](docs/AI_QVAC_TRANSCRIPTION_GUIDE.md) | STT, estructuración, prompts y evaluación. |
+| [Generación Qwen actual](docs/QWEN_STRUCTURING_P2.md) | Modelo activo, carga secuencial y límites de validación. |
+| [Revisor y métricas pendientes](docs/NOTE_VERIFIER_P3.md) | Prompts endurecidos, segundo agente Qwen, heurísticas y harness de evaluación. |
+| [Actualización de Abraham — 12/09/2026](docs/UPDATE_ABRAHAM_2026-09-12.md) | Avances del día, motivación, evidencia y próximos pasos. |
 | [Kit de investigación](docs/research/README.md) | Prompts y decisiones con fuentes. |
 
 Un ítem marcado como investigación pendiente **no** se publica como claim de producto hasta que exista el write-up.
@@ -412,8 +422,10 @@ Implementado:
 - [x] Captura de micrófono PCM 16 kHz y almacén temporal de audio.
 - [x] Adaptador QVAC 0.18.2: Whisper Large V3 Turbo para transcripción local.
 - [x] Runtime compartido con selección de GPU, warm-up, carga secuencial y cierre seguro.
-- [x] Estructuración Qwen3 1.7B Instruct Q4 con chunks, reparación JSON, schema clínico y evidencia de origen.
-- [x] Verificación de notas y degradación visible cuando la salida local no es válida.
+- [x] Generación Qwen3 4B Q4_K_M con chunks y normalización permisiva a siete secciones.
+- [x] Comprobación de existencia de IDs citados al guardar; no es validación semántica de la nota.
+- [x] Transcripción progresiva durante estructuración y conservación del texto ante fallo de Qwen.
+- [x] Panel compacto de modelos y revisión clínica con layout simplificado.
 - [x] Adaptador mock para tests y desarrollo sin modelos.
 - [x] Sesión local de validación sin login; OAuth PKCE con Google queda preparado como integración opcional.
 - [x] Shell con panel lateral: Dashboard, Notas, Pacientes y Equipo.
@@ -425,6 +437,11 @@ Implementado:
 
 Próximos pasos:
 
+- [ ] Endurecer prompts y validar estrictamente el contrato de generación.
+- [ ] Implementar el segundo agente Qwen de revisión con carga secuencial y hallazgos trazables.
+- [ ] Implementar heurísticas de evidencia, números, negaciones, sujeto, temporalidad y omisiones.
+- [ ] Crear corpus sintético anotado y harness de métricas de calidad, latencia, recursos y estabilidad.
+- [ ] Mapear dispositivos reales por backend y evaluar la selección de GPU en distintos equipos.
 - [x] Persistencia opcional de notas aceptadas en archivo JSON; los encuentros siguen en memoria.
 - [ ] Persistencia SQLite para encuentros y notas.
 - [ ] Confirmar en UI los hechos de red, almacenamiento y procesamiento que Main ya conoce.
@@ -463,6 +480,6 @@ Este repositorio **aún no publica un archivo `LICENSE`**. No asumas MIT ni otro
 
 ## Agradecimientos
 
-Oira se construye sobre [Electron](https://www.electronjs.org), [React](https://react.dev), [TypeScript](https://www.typescriptlang.org), [QVAC](https://docs.qvac.tether.io/) (Tether), Whisper Large V3 Turbo y Qwen3 1.7B Instruct Q4.
+Oira se construye sobre [Electron](https://www.electronjs.org), [React](https://react.dev), [TypeScript](https://www.typescriptlang.org), [QVAC](https://docs.qvac.tether.io/) (Tether), Whisper Large V3 Turbo y Qwen3 4B Q4_K_M.
 
 <p align="right"><a href="#readme-top">Volver arriba ↑</a></p>

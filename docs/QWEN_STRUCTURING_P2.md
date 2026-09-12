@@ -21,3 +21,11 @@ The evidence helpers currently return success or no issues; they do not
 check overlap, numbers, negation, or empty drafts. The save-time source check
 only verifies that cited segment IDs exist, not that the text is supported.
 Every generated result remains a draft requiring explicit physician acceptance.
+
+The transcript is delivered to the renderer before the model handoff. Its
+progressive display does not delay Whisper unload or Qwen load; a structuring
+failure preserves the transcript for review. The handoff reuses device metadata
+from Whisper preparation instead of querying system resources again.
+
+Next steps are documented in [the verifier and evaluation plan](NOTE_VERIFIER_P3.md).
+For the dated implementation update, see [Abraham's status update](UPDATE_ABRAHAM_2026-09-12.md).
