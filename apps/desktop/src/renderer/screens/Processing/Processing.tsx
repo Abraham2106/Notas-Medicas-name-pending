@@ -1,12 +1,15 @@
 import { Card, StatusBadge } from "@oira/ui"
-import type { ProductState } from "@oira/types"
+import type { ProductState, TranscriptSegment } from "@oira/types"
 import { useI18n } from "../../i18n/I18nProvider"
+import { ProgressiveTranscript } from "../../components/ProgressiveTranscript"
 
 type Props = {
   state: Extract<ProductState, "TRANSCRIBING" | "STRUCTURING">
+  transcript?: TranscriptSegment[]
+  failed?: boolean
 }
 
-export function ProcessingScreen({ state }: Props) {
+export function ProcessingScreen({ state, transcript = [], failed = false }: Props) {
   const { t } = useI18n()
   const transcribing = state === "TRANSCRIBING"
 
@@ -15,7 +18,11 @@ export function ProcessingScreen({ state }: Props) {
       <StatusBadge tone="info" icon="●" label={t("processing.badge")} live />
       <Card title={t("processing.cardTitle")}>
         <p role="status">
-          {transcribing ? t("processing.transcribing") : t("processing.organizing")}
+          {failed
+            ? t("processing.structuringFailed")
+            : transcribing
+              ? t("processing.transcribing")
+              : t("processing.organizing")}
         </p>
         <ol className="process-steps">
           <li className={transcribing ? "active-step" : "done-step"}>
@@ -26,6 +33,12 @@ export function ProcessingScreen({ state }: Props) {
           </li>
         </ol>
         <p className="muted">{t("processing.noEstimates")}</p>
+        {state === "STRUCTURING" && transcript.length > 0 ? (
+          <section aria-label={t("processing.transcriptHeading")} className="transcript-card">
+            <h3>{t("processing.transcriptHeading")}</h3>
+            <ProgressiveTranscript segments={transcript} immediate={failed} />
+          </section>
+        ) : null}
       </Card>
     </div>
   )

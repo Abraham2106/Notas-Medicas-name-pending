@@ -15,6 +15,7 @@ type EncounterView = {
   visitType: string
   informed: boolean
   recordingStartedAt: number | null
+  captureStarting: boolean
   encounter: Encounter | null
   transcript: TranscriptSegment[]
   note: ClinicalNote | null
@@ -40,6 +41,7 @@ export function useEncounter(): EncounterView {
   const [visitType, setVisitType] = useState("")
   const [informed, setInformed] = useState(false)
   const [recordingStartedAt, setRecordingStartedAt] = useState<number | null>(null)
+  const [captureStarting, setCaptureStarting] = useState(false)
   const [encounter, setEncounter] = useState<Encounter | null>(null)
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([])
   const [note, setNote] = useState<ClinicalNote | null>(null)
@@ -63,6 +65,8 @@ export function useEncounter(): EncounterView {
   }, [])
 
   const startRecording = useCallback(async () => {
+    if (captureStarting) return
+    setCaptureStarting(true)
     try {
       const started = await bridge.startEncounter({ label, visitType })
       try {
@@ -92,8 +96,10 @@ export function useEncounter(): EncounterView {
       apply("START")
     } catch {
       fail("No se pudo iniciar la consulta.")
+    } finally {
+      setCaptureStarting(false)
     }
-  }, [apply, bridge, fail, label, visitType])
+  }, [apply, bridge, captureStarting, fail, label, visitType])
 
   const prepareRecording = useCallback(() => {
     // Loading is deliberately non-blocking: only the dedicated record button
@@ -103,10 +109,27 @@ export function useEncounter(): EncounterView {
 
   const stopRecording = useCallback(async () => {
     if (!encounter) return
+    let transcriptReceived = false
     const unsubscribe = bridge.onInferenceProgress((event) => {
       if (event.encounterId !== encounter.id) return
-      if (event.phase === "structuring") apply("TRANSCRIBE_DONE")
-      if (event.phase === "failed") fail("No pudimos transcribir esta consulta. Puedes reintentar.")
+      if (event.phase === "structuring") {
+        if (event.transcript) {
+          transcriptReceived = true
+          setTranscript(event.transcript)
+        }
+        apply("TRANSCRIBE_DONE")
+      }
+      if (event.phase === "failed") {
+        if (event.transcript) {
+          transcriptReceived = true
+          setTranscript(event.transcript)
+        }
+        fail(
+          event.stage === "structuring"
+            ? "No pudimos organizar el borrador. La transcripción queda disponible para revisión."
+            : "No pudimos transcribir esta consulta. Puedes reintentar.",
+        )
+      }
     })
     try {
       if (captureRef.current) {
@@ -126,11 +149,15 @@ export function useEncounter(): EncounterView {
         return next
       })
     } catch {
-      fail("No pudimos transcribir esta consulta. Puedes reintentar.")
+      fail(
+        transcriptReceived || transcript.length > 0
+          ? "No pudimos organizar el borrador. La transcripción queda disponible para revisión."
+          : "No pudimos transcribir esta consulta. Puedes reintentar.",
+      )
     } finally {
       unsubscribe()
     }
-  }, [apply, bridge, encounter, fail])
+  }, [apply, bridge, encounter, fail, transcript])
 
   const editNote = useCallback((sectionId: keyof ClinicalNote["sections"], text: string) => {
     setNote((current) => {
@@ -217,6 +244,7 @@ export function useEncounter(): EncounterView {
     visitType,
     informed,
     recordingStartedAt,
+    captureStarting,
     encounter,
     transcript,
     note,

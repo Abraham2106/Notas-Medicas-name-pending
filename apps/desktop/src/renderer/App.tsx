@@ -281,6 +281,7 @@ export function App() {
               onClick={() => {
                 resetReviewChrome()
                 encounter.reset()
+                setRecorderPrepared(false)
               }}
             >
               {t("app.backToStart")}
@@ -321,9 +322,10 @@ export function App() {
           />
         ) : null}
 
-        {showFlow && (encounter.productState === "RECORDING" || recorderPrepared) ? (
+        {showFlow && (encounter.productState === "RECORDING" || (encounter.productState === "IDLE" && recorderPrepared)) ? (
           <RecordingScreen
             isRecording={encounter.productState === "RECORDING"}
+            starting={encounter.captureStarting}
             startedAtMs={encounter.recordingStartedAt ?? undefined}
             onStart={() => void encounter.startRecording()}
             onStop={() => void encounter.stopRecording()}
@@ -337,7 +339,10 @@ export function App() {
 
         {showFlow &&
         (encounter.productState === "TRANSCRIBING" || encounter.productState === "STRUCTURING") ? (
-          <ProcessingScreen state={encounter.productState} />
+          <ProcessingScreen state={encounter.productState} transcript={encounter.transcript} />
+        ) : null}
+        {showFlow && encounter.productState === "ERROR" && encounter.transcript.length > 0 ? (
+          <ProcessingScreen state="STRUCTURING" failed transcript={encounter.transcript} />
         ) : null}
 
         {showFlow &&

@@ -7,13 +7,14 @@ import { useI18n } from "../../i18n/I18nProvider"
 
 type Props = {
   isRecording: boolean
+  starting?: boolean
   startedAtMs?: number
   onStart: () => void
   onStop: () => void
   onDiscard: () => void
 }
 
-export function RecordingScreen({ isRecording, startedAtMs, onStart, onStop, onDiscard }: Props) {
+export function RecordingScreen({ isRecording, starting = false, startedAtMs, onStart, onStop, onDiscard }: Props) {
   const { t } = useI18n()
   const [confirmDiscard, setConfirmDiscard] = useState(false)
 
@@ -48,9 +49,9 @@ export function RecordingScreen({ isRecording, startedAtMs, onStart, onStop, onD
             {t("recording.stopButton")}
           </Button>
         ) : (
-          <Button variant="primary" onClick={onStart}>
+          <Button variant="primary" disabled={starting} onClick={onStart}>
             <Icon name="mic" size={18} />
-            {t("recording.startButton")}
+            {starting ? t("recording.starting") : t("recording.startButton")}
           </Button>
         )}
         <Button onClick={() => setConfirmDiscard(true)}>{t("recording.discard")}</Button>
