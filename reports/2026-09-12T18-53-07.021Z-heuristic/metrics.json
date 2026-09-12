@@ -1,0 +1,73 @@
+{
+  "status": "ok",
+  "evidence": {
+    "presence": "medido",
+    "latency": "medido",
+    "stt": "no_probado",
+    "semanticSupport": "no_probado"
+  },
+  "cases": 13,
+  "errors": 0,
+  "productEmitted": 13,
+  "inventionCases": 1,
+  "inventionRate": 0.07692307692307693,
+  "rawJsonValid": null,
+  "verifySourceOk": 1,
+  "statedWithoutSource": 0,
+  "mustIncludeCoverage": 0.54,
+  "presence": {
+    "n": 91,
+    "accuracy": 0.7582417582417582,
+    "confusion": {
+      "STATED": {
+        "STATED": 17,
+        "NOT_STATED": 15,
+        "UNKNOWN": 0
+      },
+      "NOT_STATED": {
+        "STATED": 5,
+        "NOT_STATED": 52,
+        "UNKNOWN": 0
+      },
+      "UNKNOWN": {
+        "STATED": 1,
+        "NOT_STATED": 1,
+        "UNKNOWN": 0
+      }
+    },
+    "perClass": {
+      "STATED": {
+        "precision": 0.7391304347826086,
+        "recall": 0.53125,
+        "f1": 0.6181818181818182,
+        "support": 32
+      },
+      "NOT_STATED": {
+        "precision": 0.7647058823529411,
+        "recall": 0.9122807017543859,
+        "f1": 0.8319999999999999,
+        "support": 57
+      },
+      "UNKNOWN": {
+        "precision": 0,
+        "recall": 0,
+        "f1": 0,
+        "support": 2
+      }
+    },
+    "macroF1": 0.4833939393939393
+  },
+  "latency": {
+    "samples": 13,
+    "p50": 0.3335999999999899,
+    "p95": 1.901859999999986,
+    "p99": 2.5846119999999777
+  },
+  "stt": {
+    "status": "no_medido",
+    "reason": "skip-stt: esta etapa no ejecuta Whisper ni usa WAV",
+    "wer": null,
+    "cer": null,
+    "evidence": "no_probado"
+  }
+}

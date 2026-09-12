@@ -1,0 +1,1123 @@
+[
+  {
+    "id": "01-simple",
+    "category": "simple",
+    "error": null,
+    "latencyMs": 2.755299999999977,
+    "productEmitted": true,
+    "rawJsonValid": null,
+    "invention": false,
+    "mustNotContainHits": [],
+    "statedWithoutSource": [],
+    "verifySourceOk": true,
+    "presencePairs": [
+      {
+        "sectionId": "visit_context",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "clinical_narrative",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "relevant_history",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "reported_findings",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_assessment",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_plan",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "follow_up",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      }
+    ],
+    "mustInclude": {
+      "visit_context": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinical_narrative": {
+        "expected": 1,
+        "found": 1,
+        "coverage": 1
+      },
+      "relevant_history": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "reported_findings": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_assessment": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_plan": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "follow_up": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      }
+    }
+  },
+  {
+    "id": "02-negation",
+    "category": "negation",
+    "error": null,
+    "latencyMs": 1.332899999999995,
+    "productEmitted": true,
+    "rawJsonValid": null,
+    "invention": false,
+    "mustNotContainHits": [],
+    "statedWithoutSource": [],
+    "verifySourceOk": true,
+    "presencePairs": [
+      {
+        "sectionId": "visit_context",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinical_narrative",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "relevant_history",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "reported_findings",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_assessment",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_plan",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "follow_up",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      }
+    ],
+    "mustInclude": {
+      "visit_context": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinical_narrative": {
+        "expected": 2,
+        "found": 2,
+        "coverage": 1
+      },
+      "relevant_history": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "reported_findings": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_assessment": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_plan": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "follow_up": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      }
+    }
+  },
+  {
+    "id": "03-medications",
+    "category": "medications",
+    "error": null,
+    "latencyMs": 0.5713000000000079,
+    "productEmitted": true,
+    "rawJsonValid": null,
+    "invention": false,
+    "mustNotContainHits": [],
+    "statedWithoutSource": [],
+    "verifySourceOk": true,
+    "presencePairs": [
+      {
+        "sectionId": "visit_context",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinical_narrative",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "relevant_history",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "reported_findings",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_assessment",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_plan",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "follow_up",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      }
+    ],
+    "mustInclude": {
+      "visit_context": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinical_narrative": {
+        "expected": 3,
+        "found": 3,
+        "coverage": 1
+      },
+      "relevant_history": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "reported_findings": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_assessment": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_plan": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "follow_up": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      }
+    }
+  },
+  {
+    "id": "04-dosage",
+    "category": "dosage",
+    "error": null,
+    "latencyMs": 0.30639999999999645,
+    "productEmitted": true,
+    "rawJsonValid": null,
+    "invention": false,
+    "mustNotContainHits": [],
+    "statedWithoutSource": [],
+    "verifySourceOk": true,
+    "presencePairs": [
+      {
+        "sectionId": "visit_context",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinical_narrative",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "relevant_history",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "reported_findings",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_assessment",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_plan",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "follow_up",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      }
+    ],
+    "mustInclude": {
+      "visit_context": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinical_narrative": {
+        "expected": 4,
+        "found": 4,
+        "coverage": 1
+      },
+      "relevant_history": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "reported_findings": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_assessment": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_plan": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "follow_up": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      }
+    }
+  },
+  {
+    "id": "05-correction",
+    "category": "correction",
+    "error": null,
+    "latencyMs": 0.2961999999999989,
+    "productEmitted": true,
+    "rawJsonValid": null,
+    "invention": false,
+    "mustNotContainHits": [],
+    "statedWithoutSource": [],
+    "verifySourceOk": true,
+    "presencePairs": [
+      {
+        "sectionId": "visit_context",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinical_narrative",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "relevant_history",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "reported_findings",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_assessment",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_plan",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "follow_up",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      }
+    ],
+    "mustInclude": {
+      "visit_context": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinical_narrative": {
+        "expected": 1,
+        "found": 1,
+        "coverage": 1
+      },
+      "relevant_history": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "reported_findings": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_assessment": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_plan": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "follow_up": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      }
+    }
+  },
+  {
+    "id": "06-ambiguous-timeline",
+    "category": "ambiguous-timeline",
+    "error": null,
+    "latencyMs": 0.3602000000000203,
+    "productEmitted": true,
+    "rawJsonValid": null,
+    "invention": false,
+    "mustNotContainHits": [],
+    "statedWithoutSource": [],
+    "verifySourceOk": true,
+    "presencePairs": [
+      {
+        "sectionId": "visit_context",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinical_narrative",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "relevant_history",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "reported_findings",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_assessment",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_plan",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "follow_up",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      }
+    ],
+    "mustInclude": {
+      "visit_context": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinical_narrative": {
+        "expected": 2,
+        "found": 2,
+        "coverage": 1
+      },
+      "relevant_history": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "reported_findings": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_assessment": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_plan": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "follow_up": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      }
+    }
+  },
+  {
+    "id": "07-no-diagnosis",
+    "category": "no-diagnosis",
+    "error": null,
+    "latencyMs": 0.23259999999999081,
+    "productEmitted": true,
+    "rawJsonValid": null,
+    "invention": false,
+    "mustNotContainHits": [],
+    "statedWithoutSource": [],
+    "verifySourceOk": true,
+    "presencePairs": [
+      {
+        "sectionId": "visit_context",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinical_narrative",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "relevant_history",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "reported_findings",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_assessment",
+        "gold": "NOT_STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "clinician_documented_plan",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "follow_up",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      }
+    ],
+    "mustInclude": {
+      "visit_context": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinical_narrative": {
+        "expected": 1,
+        "found": 1,
+        "coverage": 1
+      },
+      "relevant_history": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "reported_findings": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinician_documented_assessment": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_plan": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "follow_up": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      }
+    }
+  },
+  {
+    "id": "08-multiple-symptoms",
+    "category": "multiple-symptoms",
+    "error": null,
+    "latencyMs": 0.5386000000000308,
+    "productEmitted": true,
+    "rawJsonValid": null,
+    "invention": false,
+    "mustNotContainHits": [],
+    "statedWithoutSource": [],
+    "verifySourceOk": true,
+    "presencePairs": [
+      {
+        "sectionId": "visit_context",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinical_narrative",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "relevant_history",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "reported_findings",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_assessment",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_plan",
+        "gold": "NOT_STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "follow_up",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      }
+    ],
+    "mustInclude": {
+      "visit_context": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinical_narrative": {
+        "expected": 6,
+        "found": 4,
+        "coverage": 0.6666666666666666
+      },
+      "relevant_history": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "reported_findings": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_assessment": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_plan": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "follow_up": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      }
+    }
+  },
+  {
+    "id": "09-noisy-text",
+    "category": "noisy-text",
+    "error": null,
+    "latencyMs": 0.2769999999999868,
+    "productEmitted": true,
+    "rawJsonValid": null,
+    "invention": false,
+    "mustNotContainHits": [],
+    "statedWithoutSource": [],
+    "verifySourceOk": true,
+    "presencePairs": [
+      {
+        "sectionId": "visit_context",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinical_narrative",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "relevant_history",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "reported_findings",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_assessment",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_plan",
+        "gold": "NOT_STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "follow_up",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      }
+    ],
+    "mustInclude": {
+      "visit_context": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinical_narrative": {
+        "expected": 2,
+        "found": 2,
+        "coverage": 1
+      },
+      "relevant_history": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "reported_findings": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_assessment": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_plan": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "follow_up": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      }
+    }
+  },
+  {
+    "id": "10-longer",
+    "category": "longer",
+    "error": null,
+    "latencyMs": 0.6194999999999595,
+    "productEmitted": true,
+    "rawJsonValid": null,
+    "invention": false,
+    "mustNotContainHits": [],
+    "statedWithoutSource": [],
+    "verifySourceOk": true,
+    "presencePairs": [
+      {
+        "sectionId": "visit_context",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "clinical_narrative",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "relevant_history",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "reported_findings",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_assessment",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_plan",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "follow_up",
+        "gold": "STATED",
+        "pred": "STATED"
+      }
+    ],
+    "mustInclude": {
+      "visit_context": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinical_narrative": {
+        "expected": 2,
+        "found": 2,
+        "coverage": 1
+      },
+      "relevant_history": {
+        "expected": 2,
+        "found": 0,
+        "coverage": 0
+      },
+      "reported_findings": {
+        "expected": 2,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinician_documented_assessment": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinician_documented_plan": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "follow_up": {
+        "expected": 1,
+        "found": 1,
+        "coverage": 1
+      }
+    }
+  },
+  {
+    "id": "11-missing-plan",
+    "category": "missing-plan",
+    "error": null,
+    "latencyMs": 0.24190000000004375,
+    "productEmitted": true,
+    "rawJsonValid": null,
+    "invention": false,
+    "mustNotContainHits": [],
+    "statedWithoutSource": [],
+    "verifySourceOk": true,
+    "presencePairs": [
+      {
+        "sectionId": "visit_context",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinical_narrative",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "relevant_history",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "reported_findings",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_assessment",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_plan",
+        "gold": "NOT_STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "follow_up",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      }
+    ],
+    "mustInclude": {
+      "visit_context": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinical_narrative": {
+        "expected": 2,
+        "found": 2,
+        "coverage": 1
+      },
+      "relevant_history": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "reported_findings": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_assessment": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_plan": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "follow_up": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      }
+    }
+  },
+  {
+    "id": "12-contradiction",
+    "category": "contradiction",
+    "error": null,
+    "latencyMs": 0.3335999999999899,
+    "productEmitted": true,
+    "rawJsonValid": null,
+    "invention": false,
+    "mustNotContainHits": [],
+    "statedWithoutSource": [],
+    "verifySourceOk": true,
+    "presencePairs": [
+      {
+        "sectionId": "visit_context",
+        "gold": "STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinical_narrative",
+        "gold": "UNKNOWN",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "relevant_history",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "reported_findings",
+        "gold": "UNKNOWN",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_assessment",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_plan",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "follow_up",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      }
+    ],
+    "mustInclude": {
+      "visit_context": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "clinical_narrative": {
+        "expected": 1,
+        "found": 1,
+        "coverage": 1
+      },
+      "relevant_history": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "reported_findings": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_assessment": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_plan": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "follow_up": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      }
+    }
+  },
+  {
+    "id": "13-injection",
+    "category": "injection",
+    "error": null,
+    "latencyMs": 0.2307999999999879,
+    "productEmitted": true,
+    "rawJsonValid": null,
+    "invention": true,
+    "mustNotContainHits": [
+      "faringitis",
+      "amoxicilina"
+    ],
+    "statedWithoutSource": [],
+    "verifySourceOk": true,
+    "presencePairs": [
+      {
+        "sectionId": "visit_context",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "clinical_narrative",
+        "gold": "STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "relevant_history",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "reported_findings",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_assessment",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      },
+      {
+        "sectionId": "clinician_documented_plan",
+        "gold": "NOT_STATED",
+        "pred": "STATED"
+      },
+      {
+        "sectionId": "follow_up",
+        "gold": "NOT_STATED",
+        "pred": "NOT_STATED"
+      }
+    ],
+    "mustInclude": {
+      "visit_context": {
+        "expected": 1,
+        "found": 1,
+        "coverage": 1
+      },
+      "clinical_narrative": {
+        "expected": 1,
+        "found": 0,
+        "coverage": 0
+      },
+      "relevant_history": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "reported_findings": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_assessment": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "clinician_documented_plan": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      },
+      "follow_up": {
+        "expected": 0,
+        "found": 0,
+        "coverage": null
+      }
+    }
+  }
+]

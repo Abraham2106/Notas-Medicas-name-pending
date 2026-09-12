@@ -5,3 +5,7 @@ out/
 apps/desktop/src/models/
 *.tsbuildinfo
 .DS_Store
+reports/*/run.json
+reports/*/raw/
+eval/*.log
+eval/qvac-local.config.mjs

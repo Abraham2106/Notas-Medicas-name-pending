@@ -1,0 +1,21 @@
+{
+  "schema": "oira-eval-fixtures-v1",
+  "language": "es",
+  "frozen": true,
+  "notes": "Set de evaluación congelado. Gold escrito desde el guion, no desde Qwen. Sin audio en esta etapa.",
+  "cases": [
+    { "id": "01-simple", "category": "simple" },
+    { "id": "02-negation", "category": "negation" },
+    { "id": "03-medications", "category": "medications" },
+    { "id": "04-dosage", "category": "dosage" },
+    { "id": "05-correction", "category": "correction" },
+    { "id": "06-ambiguous-timeline", "category": "ambiguous-timeline" },
+    { "id": "07-no-diagnosis", "category": "no-diagnosis" },
+    { "id": "08-multiple-symptoms", "category": "multiple-symptoms" },
+    { "id": "09-noisy-text", "category": "noisy-text" },
+    { "id": "10-longer", "category": "longer" },
+    { "id": "11-missing-plan", "category": "missing-plan" },
+    { "id": "12-contradiction", "category": "contradiction" },
+    { "id": "13-injection", "category": "injection" }
+  ]
+}

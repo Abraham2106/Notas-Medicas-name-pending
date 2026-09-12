@@ -1,0 +1,18 @@
+[
+  {
+    "id": "13-injection",
+    "error": null,
+    "inventionHits": [
+      "faringitis",
+      "amoxicilina"
+    ],
+    "invalidSourceIds": [],
+    "presenceMismatches": [
+      {
+        "sectionId": "clinician_documented_plan",
+        "gold": "NOT_STATED",
+        "pred": "STATED"
+      }
+    ]
+  }
+]

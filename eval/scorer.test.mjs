@@ -1,0 +1,236 @@
+import assert from "node:assert/strict"
+import { describe, it } from "node:test"
+import {
+  PRESENCE_LABELS,
+  SECTION_IDS,
+  charErrorRate,
+  evaluateCase,
+  normalizeText,
+  presenceMetrics,
+  quantile,
+  ratio,
+  sttNotMeasured,
+  summarize,
+  wordErrorRate,
+} from "./scorer/index.mjs"
+
+const emptyNote = () => ({
+  sections: Object.fromEntries(
+    SECTION_IDS.map((id) => [
+      id,
+      { text: "", presence: "NOT_STATED", sourceSegmentIds: [], reviewed: false },
+    ]),
+  ),
+})
+
+describe("ratio", () => {
+  it("returns null when the denominator is empty", () => {
+    assert.equal(ratio(0, 0), null)
+    assert.equal(ratio(3, 0), null)
+  })
+
+  it("does not invent 0% or 100% from a missing denominator", () => {
+    assert.notEqual(ratio(0, 0), 0)
+    assert.notEqual(ratio(0, 0), 1)
+  })
+
+  it("divides when the denominator exists", () => {
+    assert.equal(ratio(1, 4), 0.25)
+  })
+})
+
+describe("normalizeText", () => {
+  it("folds case and Spanish accents for lexical checks", () => {
+    assert.equal(normalizeText("  Fiebre  "), normalizeText("fiebre"))
+    assert.equal(normalizeText("Panamá"), normalizeText("Panama"))
+  })
+})
+
+describe("presenceMetrics", () => {
+  it("scores a 3-class confusion matrix and per-class F1", () => {
+    const pairs = [
+      { gold: "STATED", pred: "STATED" },
+      { gold: "STATED", pred: "NOT_STATED" },
+      { gold: "NOT_STATED", pred: "NOT_STATED" },
+      { gold: "UNKNOWN", pred: "STATED" },
+    ]
+    const metrics = presenceMetrics(pairs)
+    assert.deepEqual(PRESENCE_LABELS, ["STATED", "NOT_STATED", "UNKNOWN"])
+    assert.equal(metrics.n, 4)
+    assert.equal(metrics.accuracy, 0.5)
+    assert.equal(metrics.confusion.STATED.STATED, 1)
+    assert.equal(metrics.confusion.STATED.NOT_STATED, 1)
+    assert.equal(metrics.confusion.UNKNOWN.STATED, 1)
+    assert.ok(metrics.perClass.STATED.precision !== null)
+    assert.ok(metrics.macroF1 !== null)
+  })
+
+  it("returns null F1 for a class that never appears in gold or predictions", () => {
+    const pairs = [
+      { gold: "STATED", pred: "STATED" },
+      { gold: "NOT_STATED", pred: "NOT_STATED" },
+    ]
+    const metrics = presenceMetrics(pairs)
+    assert.equal(metrics.perClass.UNKNOWN.f1, null)
+    assert.equal(metrics.perClass.UNKNOWN.support, 0)
+  })
+
+  it("scores F1 as 0 when a gold class is never predicted", () => {
+    const metrics = presenceMetrics([
+      { gold: "UNKNOWN", pred: "STATED" },
+      { gold: "UNKNOWN", pred: "NOT_STATED" },
+      { gold: "STATED", pred: "STATED" },
+    ])
+    assert.equal(metrics.perClass.UNKNOWN.support, 2)
+    assert.equal(metrics.perClass.UNKNOWN.precision, 0)
+    assert.equal(metrics.perClass.UNKNOWN.recall, 0)
+    assert.equal(metrics.perClass.UNKNOWN.f1, 0)
+  })
+})
+
+describe("evaluateCase", () => {
+  it("does not score a failed run as a success", () => {
+    const gold = {
+      must_not_contain: ["faringitis"],
+      sections: {
+        visit_context: { presence: "STATED", mustInclude: ["rodilla"] },
+        clinical_narrative: { presence: "NOT_STATED", mustInclude: [] },
+        relevant_history: { presence: "NOT_STATED", mustInclude: [] },
+        reported_findings: { presence: "NOT_STATED", mustInclude: [] },
+        clinician_documented_assessment: { presence: "NOT_STATED", mustInclude: [] },
+        clinician_documented_plan: { presence: "NOT_STATED", mustInclude: [] },
+        follow_up: { presence: "NOT_STATED", mustInclude: [] },
+      },
+    }
+    const result = evaluateCase({
+      gold,
+      note: emptyNote(),
+      transcript: [{ id: "seg-1", text: "rodilla", startMs: 0 }],
+      error: "MODEL_NOT_READY",
+      rawSdkText: "{",
+      latencyMs: 12,
+    })
+    assert.equal(result.productEmitted, false)
+    assert.equal(result.presencePairs.length, 0)
+    assert.equal(result.invention, false)
+    assert.equal(result.latencyMs, null)
+  })
+
+  it("flags must_not_contain hits and STATED fields without sources", () => {
+    const note = emptyNote()
+    note.sections.visit_context = {
+      text: "Sospecha de faringitis por dolor de rodilla.",
+      presence: "STATED",
+      sourceSegmentIds: [],
+      reviewed: false,
+    }
+    const gold = {
+      must_not_contain: ["faringitis"],
+      sections: {
+        visit_context: { presence: "STATED", mustInclude: ["rodilla"] },
+        clinical_narrative: { presence: "NOT_STATED", mustInclude: [] },
+        relevant_history: { presence: "NOT_STATED", mustInclude: [] },
+        reported_findings: { presence: "NOT_STATED", mustInclude: [] },
+        clinician_documented_assessment: { presence: "NOT_STATED", mustInclude: [] },
+        clinician_documented_plan: { presence: "NOT_STATED", mustInclude: [] },
+        follow_up: { presence: "NOT_STATED", mustInclude: [] },
+      },
+    }
+    const result = evaluateCase({
+      gold,
+      note,
+      transcript: [{ id: "seg-1", text: "dolor de rodilla", startMs: 0 }],
+      rawSdkText: '{"visit_context":"dolor"}',
+    })
+    assert.equal(result.productEmitted, true)
+    assert.equal(result.rawJsonValid, true)
+    assert.equal(result.invention, true)
+    assert.deepEqual(result.mustNotContainHits, ["faringitis"])
+    assert.deepEqual(result.statedWithoutSource, ["visit_context"])
+    assert.equal(result.verifySourceOk, true)
+    assert.equal(result.mustInclude.visit_context.found, 1)
+  })
+
+  it("fails verifySource when a cited id is missing", () => {
+    const note = emptyNote()
+    note.sections.visit_context = {
+      text: "Dolor de rodilla.",
+      presence: "STATED",
+      sourceSegmentIds: ["seg-99"],
+      reviewed: false,
+    }
+    const gold = {
+      must_not_contain: [],
+      sections: Object.fromEntries(
+        SECTION_IDS.map((id) => [id, { presence: "NOT_STATED", mustInclude: [] }]),
+      ),
+    }
+    gold.sections.visit_context = { presence: "STATED", mustInclude: [] }
+    const result = evaluateCase({
+      gold,
+      note,
+      transcript: [{ id: "seg-1", text: "Dolor de rodilla.", startMs: 0 }],
+    })
+    assert.equal(result.verifySourceOk, false)
+  })
+})
+
+describe("quantile", () => {
+  it("returns null for an empty sample", () => {
+    assert.equal(quantile([], 0.5), null)
+  })
+
+  it("interpolates p50 between the two central values when n is even", () => {
+    assert.equal(quantile([1, 2, 3, 4], 0.5), 2.5)
+  })
+})
+
+describe("summarize", () => {
+  it("keeps failed cases in the denominator and excludes them from latency", () => {
+    const gold = {
+      must_not_contain: [],
+      sections: Object.fromEntries(
+        SECTION_IDS.map((id) => [id, { presence: "NOT_STATED", mustInclude: [] }]),
+      ),
+    }
+    const ok = evaluateCase({
+      gold,
+      note: emptyNote(),
+      transcript: [],
+      latencyMs: 10,
+    })
+    const failed = evaluateCase({
+      gold,
+      note: emptyNote(),
+      transcript: [],
+      error: "timeout",
+      latencyMs: 9999,
+    })
+    const summary = summarize([
+      { id: "01", evaluation: ok, error: null, latencyMs: 10 },
+      { id: "02", evaluation: failed, error: "timeout", latencyMs: 9999 },
+    ])
+    assert.equal(summary.cases, 2)
+    assert.equal(summary.errors, 1)
+    assert.equal(summary.latency.samples, 1)
+    assert.equal(summary.latency.p50, 10)
+    assert.equal(summary.stt.status, "no_medido")
+  })
+})
+
+describe("stt stubs", () => {
+  it("computes WER and CER on strings without claiming a benchmark run", () => {
+    assert.equal(wordErrorRate("hola mundo", "hola mundo"), 0)
+    assert.ok(wordErrorRate("hola mundo", "hola") > 0)
+    assert.equal(charErrorRate("ab", "ab"), 0)
+    assert.ok(charErrorRate("ab", "ac") > 0)
+  })
+
+  it("exposes an explicit not-measured STT payload", () => {
+    const payload = sttNotMeasured("skip-stt: no hay WAV en esta etapa")
+    assert.equal(payload.status, "no_medido")
+    assert.equal(payload.wer, null)
+    assert.equal(payload.cer, null)
+    assert.equal(payload.evidence, "no_probado")
+  })
+})
