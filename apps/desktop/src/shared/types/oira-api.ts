@@ -3,6 +3,7 @@ import type { EncounterStatus } from "../constants/encounter-status"
 import type {
   AppendAudioInput,
   ClipboardWriteInput,
+  ExportNoteInput,
   GenerateNoteInput,
   SaveNoteInput,
   StartEncounterInput,
@@ -34,6 +35,10 @@ export type SaveNoteResult = {
   noteId: string
 }
 
+export type ExportNoteResult = {
+  exported: true
+}
+
 export type WriteClipboardResult = {
   written: true
 }
@@ -62,6 +67,7 @@ export type OiraApi = {
     input: GenerateNoteInput,
   ) => Promise<Result<GenerateNoteResult>>
   saveNote: (input: SaveNoteInput) => Promise<Result<SaveNoteResult>>
+  exportNote: (input: ExportNoteInput) => Promise<Result<ExportNoteResult>>
   writeClipboard: (
     input: ClipboardWriteInput,
   ) => Promise<Result<WriteClipboardResult>>

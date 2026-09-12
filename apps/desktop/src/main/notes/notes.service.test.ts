@@ -79,7 +79,7 @@ describe("createNotesService", () => {
     const notes = createNotesService({
       transcription: createMockTranscription(),
       structuring: createMockStructuring(),
-      onProgress: (event) => phases.push(event.phase),
+      progress: { emit: (event) => phases.push(event.phase) },
     })
     await notes.generate(ENCOUNTER)
     expect(phases).toEqual(["transcribing", "structuring"])
@@ -98,7 +98,7 @@ describe("createNotesService", () => {
     const notes = createNotesService({
       ...createUnavailableQvacPorts(),
       audio,
-      onProgress: (event) => phases.push(event.phase),
+      progress: { emit: (event) => phases.push(event.phase) },
     })
     await expect(notes.generate(ENCOUNTER)).rejects.toMatchObject({
       code: "MODEL_NOT_READY",
@@ -144,7 +144,7 @@ describe("createNotesService", () => {
     const encounters = createEncounterService({ repository })
     const notes = createNotesService({
       ...createUnavailableQvacPorts(),
-      encounters: repository,
+      encounters: createEncounterService({ repository }),
     })
     await expect(notes.generate(encounterId)).rejects.toMatchObject({
       code: "MODEL_NOT_READY",
@@ -160,7 +160,7 @@ describe("createNotesService", () => {
     const notes = createNotesService({
       transcription: createMockTranscription(),
       structuring: createMockStructuring(),
-      encounters: repository,
+      encounters: createEncounterService({ repository }),
     })
     const generated = await notes.generate(encounterId)
     expect((await repository.getById(encounterId))?.status).toBe("transcribed")
@@ -174,7 +174,7 @@ describe("createNotesService", () => {
     const notes = createNotesService({
       transcription: createMockTranscription(),
       structuring: createMockStructuring(),
-      encounters: repository,
+      encounters: createEncounterService({ repository }),
       notes: store,
     })
     const generated = await notes.generate(encounterId)

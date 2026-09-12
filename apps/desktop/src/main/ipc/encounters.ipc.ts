@@ -20,6 +20,7 @@ export function registerEncounterIpc(
     withValidation({
       channel: IPC_CHANNELS.START_ENCOUNTER,
       schema: startEncounterInputSchema,
+      requiresSession: true,
       session: deps.session,
       logger: deps.logger,
       run: (input) => deps.encounters.start(input),
@@ -30,6 +31,7 @@ export function registerEncounterIpc(
     withValidation({
       channel: IPC_CHANNELS.STOP_ENCOUNTER,
       schema: stopEncounterInputSchema,
+      requiresSession: true,
       session: deps.session,
       logger: deps.logger,
       run: (input) => deps.encounters.stop(input.encounterId),

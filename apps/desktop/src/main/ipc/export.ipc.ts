@@ -13,6 +13,7 @@ export function registerExportIpc(
     withValidation({
       channel: IPC_CHANNELS.EXPORT_NOTE,
       schema: exportNoteInputSchema,
+      requiresSession: true,
       session: deps.session,
       logger: deps.logger,
       run: (input) => deps.exportNote.exportNote(input),

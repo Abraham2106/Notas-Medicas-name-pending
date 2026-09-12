@@ -15,6 +15,7 @@ const oira: OiraApi = {
   generateNote: (input) =>
     ipcRenderer.invoke(IPC_CHANNELS.GENERATE_NOTE, input),
   saveNote: (input) => ipcRenderer.invoke(IPC_CHANNELS.SAVE_NOTE, input),
+  exportNote: (input) => ipcRenderer.invoke(IPC_CHANNELS.EXPORT_NOTE, input),
   writeClipboard: (input) =>
     ipcRenderer.invoke(IPC_CHANNELS.CLIPBOARD_WRITE, input),
   getSettings: () => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET, {}),

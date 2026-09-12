@@ -1,11 +1,10 @@
 import type { ClinicalNote } from "@oira/types"
 import type { GenerateNoteResult } from "../../shared/types/oira-api"
+import type { AuthProfile, AuthSessionState } from "../../shared/types/auth-profile"
 
 /**
- * Driving (inbound) ports. IPC, tests, and future CLIs call these;
- * application services implement them. NotesPort lives here (not in the
- * service file) so the hexagon does not import the application from the
- * contract barrel.
+ * Driving (inbound) ports. IPC, tests, and future CLIs call these.
+ * Contracts live here so adapters/services implement them, not the reverse.
  */
 
 export type NotesPort = {
@@ -16,7 +15,25 @@ export type NotesPort = {
   }) => Promise<{ noteId: string }>
 }
 
+export type ExportNoteCommand = {
+  encounterId: string
+  format: "txt" | "json"
+}
+
+export type ExportPort = {
+  exportNote: (input: ExportNoteCommand) => Promise<{ exported: true }>
+}
+
+export type SessionPort = {
+  isAuthenticated: () => boolean
+  unlock: (pin: string) => Promise<{ unlocked: true }>
+  lock: () => Promise<{ locked: true }>
+}
+
+export type GoogleAuthPort = {
+  signIn: () => Promise<AuthProfile>
+  signOut: () => Promise<{ signedOut: true }>
+  session: () => AuthSessionState
+}
+
 export type { EncounterPort } from "../encounters/encounter.types"
-export type { ExportPort } from "../export/export.service"
-export type { SessionPort } from "../auth/auth.service"
-export type { GoogleAuthPort } from "../auth/google.port"

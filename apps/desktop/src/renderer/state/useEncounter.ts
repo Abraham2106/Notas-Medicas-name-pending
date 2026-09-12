@@ -176,9 +176,16 @@ export function useEncounter(): EncounterView {
   }, [apply, bridge, encounter, fail, note])
 
   const exportNote = useCallback(async () => {
+    if (encounter) {
+      try {
+        await bridge.exportNote(encounter.id, "txt")
+      } catch {
+        // File export requires an accepted note; clipboard copy still proceeds.
+      }
+    }
     apply("EXPORT")
     setCopied(true)
-  }, [apply])
+  }, [apply, bridge, encounter])
 
   const reset = useCallback(() => {
     if (captureRef.current) {

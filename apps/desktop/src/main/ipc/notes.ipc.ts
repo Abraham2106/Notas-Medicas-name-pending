@@ -16,6 +16,7 @@ export function registerNotesIpc(
     withValidation({
       channel: IPC_CHANNELS.GENERATE_NOTE,
       schema: generateNoteInputSchema,
+      requiresSession: true,
       session: deps.session,
       logger: deps.logger,
       run: (input) => deps.notes.generate(input.encounterId),
@@ -26,6 +27,7 @@ export function registerNotesIpc(
     withValidation({
       channel: IPC_CHANNELS.SAVE_NOTE,
       schema: saveNoteInputSchema,
+      requiresSession: true,
       session: deps.session,
       logger: deps.logger,
       run: (input) => deps.notes.save(input),

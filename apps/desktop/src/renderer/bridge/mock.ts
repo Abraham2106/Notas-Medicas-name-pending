@@ -29,6 +29,10 @@ export type DemoBridge = {
     note: ClinicalNote
   }>
   saveNote: (encounterId: string, note: ClinicalNote) => Promise<void>
+  exportNote: (
+    encounterId: string,
+    format?: "txt" | "json",
+  ) => Promise<{ exported: true }>
   writeClipboard: (text: string) => Promise<void>
   getSettings: () => Promise<AppSettings>
   saveSettings: (input: { uiLocale: AppSettings["uiLocale"] }) => Promise<AppSettings>
@@ -108,6 +112,9 @@ export function createMockBridge(): DemoBridge {
     },
     async saveNote() {
       await wait(150)
+    },
+    async exportNote() {
+      return { exported: true as const }
     },
     async writeClipboard(text) {
       await navigator.clipboard.writeText(text)

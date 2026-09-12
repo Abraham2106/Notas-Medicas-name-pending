@@ -28,6 +28,7 @@ export function registerSettingsIpc(
     withValidation({
       channel: IPC_CHANNELS.SETTINGS_SAVE,
       schema: saveSettingsInputSchema,
+      requiresSession: true,
       session: deps.session,
       logger: deps.logger,
       run: (input) => deps.settings.save(input),

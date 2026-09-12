@@ -84,7 +84,7 @@ app.whenReady().then(() => {
   let audio = createAudioTempStore({ audioTempDir: defaultAudioTempDir() })
   let inferenceAdapter = env.inferenceAdapter
   let settingsFile = join(tmpdir(), "oira-dev-settings.json")
-  let notesFile: string | undefined
+  let notesFile: string
   try {
     const config = loadAppConfig({
       userData: app.getPath("userData"),
@@ -95,9 +95,11 @@ app.whenReady().then(() => {
     audio = createAudioTempStore({ audioTempDir: config.paths.audioTempDir })
     inferenceAdapter = config.env.inferenceAdapter
     settingsFile = config.paths.settingsFile
-    notesFile = join(config.paths.userData, "notes", "accepted-notes.json")
+    notesFile = config.paths.databaseFile
   } catch {
-    // Prototype still opens if settings/paths fail; Justin owns persistence.
+    logger.log({ action: "app.config", status: "error" })
+    app.quit()
+    return
   }
   audio.sweepOrphans()
 

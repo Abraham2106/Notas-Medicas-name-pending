@@ -6,8 +6,9 @@ import {
   defaultAudioTempDir,
 } from "../audio"
 import {
-  createAuthStub,
+  createAuthenticatedSession,
   createGoogleAuthPortFromEnv,
+  createGoogleLinkedSession,
   type GoogleAuthPort,
   type SessionPort,
 } from "../auth"
@@ -34,6 +35,7 @@ import type {
   ClipboardPort,
   IpcLogPort,
   NoteStorePort,
+  ProgressPort,
   SettingsPort,
   StructuringPort,
   TranscriptionPort,
@@ -86,6 +88,22 @@ function resolveNoteStore(options: ComposeApplicationOptions): NoteStorePort {
   return createMemoryNoteStore()
 }
 
+function toProgressPort(
+  onProgress?: (event: InferenceProgress) => void,
+): ProgressPort {
+  return { emit: onProgress ?? (() => undefined) }
+}
+
+function defaultSession(
+  googleAuth: GoogleAuthPort,
+  override?: SessionPort,
+): SessionPort {
+  if (override) return override
+  // IPC tests exercise clinical channels without a Google round-trip.
+  if (process.env.NODE_ENV === "test") return createAuthenticatedSession()
+  return createGoogleLinkedSession(googleAuth)
+}
+
 /**
  * Composition root: wires inbound services to outbound adapters.
  * IPC must not compose dependencies; it only registers handlers.
@@ -113,13 +131,15 @@ export function composeApplication(
     (options.notesFile
       ? dirname(options.notesFile)
       : join(tmpdir(), "oira-exports"))
+  const googleAuth = options.googleAuth ?? createGoogleAuthPortFromEnv(process.env)
+  const encounters = createEncounterService({ repository, audio })
 
   return {
-    encounters: createEncounterService({ repository, audio }),
+    encounters,
     notes: createNotesService({
-      encounters: repository,
+      encounters,
       audio,
-      onProgress: options.onProgress,
+      progress: toProgressPort(options.onProgress),
       notes: notesStore,
       transcription: options.transcription ?? inference.transcription,
       structuring: options.structuring ?? inference.structuring,
@@ -131,8 +151,8 @@ export function composeApplication(
         writer: nodeFileWriter,
         exportDir,
       }),
-    session: options.session ?? createAuthStub(),
-    googleAuth: options.googleAuth ?? createGoogleAuthPortFromEnv(process.env),
+    session: defaultSession(googleAuth, options.session),
+    googleAuth,
     logger,
     audio,
     clipboard:

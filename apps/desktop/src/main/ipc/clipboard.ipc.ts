@@ -19,6 +19,7 @@ export function registerClipboardIpc(
     withValidation({
       channel: IPC_CHANNELS.CLIPBOARD_WRITE,
       schema: clipboardWriteInputSchema,
+      requiresSession: true,
       session: deps.session,
       logger: deps.logger,
       run: async (input) => {
