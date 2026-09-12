@@ -13,6 +13,7 @@
     "runtime:versions": "node scripts/print-runtime.mjs",
     "qvac:smoke": "node scripts/qvac-smoke.mjs",
     "qvac:whisper": "node scripts/qvac-whisper.mjs",
+    "qvac:qwen": "node scripts/qvac-qwen.mjs",
     "qvac:record": "electron scripts/qvac-record.mjs"
   },
   "dependencies": {
