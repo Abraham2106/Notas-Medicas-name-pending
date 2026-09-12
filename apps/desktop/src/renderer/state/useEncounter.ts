@@ -27,7 +27,7 @@ type EncounterView = {
   stopRecording: () => Promise<void>
   editNote: (sectionId: keyof ClinicalNote["sections"], text: string) => void
   toggleReviewed: (sectionId: keyof ClinicalNote["sections"], reviewed: boolean) => void
-  acceptNote: () => Promise<void>
+  acceptNote: (clinicianConfirmed: true) => Promise<void>
   exportNote: () => Promise<void>
   reset: () => void
 }
@@ -165,10 +165,10 @@ export function useEncounter(): EncounterView {
     [],
   )
 
-  const acceptNote = useCallback(async () => {
+  const acceptNote = useCallback(async (clinicianConfirmed: true) => {
     if (!encounter || !note) return
     try {
-      await bridge.saveNote(encounter.id, note)
+      await bridge.saveNote(encounter.id, note, clinicianConfirmed)
       apply("ACCEPT")
     } catch {
       fail("No se pudo guardar el borrador.")

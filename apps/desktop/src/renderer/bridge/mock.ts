@@ -28,7 +28,11 @@ export type DemoBridge = {
     transcript: TranscriptSegment[]
     note: ClinicalNote
   }>
-  saveNote: (encounterId: string, note: ClinicalNote) => Promise<void>
+  saveNote: (
+    encounterId: string,
+    note: ClinicalNote,
+    clinicianConfirmed: true,
+  ) => Promise<void>
   exportNote: (
     encounterId: string,
     format?: "txt" | "json",

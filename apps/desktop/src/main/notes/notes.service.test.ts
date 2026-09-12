@@ -6,8 +6,8 @@ import { syntheticClinicalNote } from "../../shared/fixtures/synthetic-consult"
 import { invalidStructuredOutputError } from "../errors/notes"
 import { createNotesService } from "./notes.service"
 import { createMockStructuring, createMockTranscription } from "../inference/mock"
-import type { StructuringPort } from "../inference/port"
-import { createUnavailableQvacPorts } from "../qvac/unavailable"
+import type { StructuringPort, TranscriptionPort } from "../inference/port"
+import { modelNotReadyError } from "../errors/inference"
 import { createAudioTempStore } from "../audio"
 import {
   createEncounterService,
@@ -16,6 +16,24 @@ import {
 import type { EncounterRepository } from "../encounters/encounter.repository"
 import { createMemoryNoteStore } from "../storage/memory.store"
 import type { InferenceProgress } from "../../shared/types/inference-progress"
+
+function createUnavailableQvacPorts(): {
+  transcription: TranscriptionPort
+  structuring: StructuringPort
+} {
+  return {
+    transcription: {
+      async transcribe() {
+        throw modelNotReadyError()
+      },
+    },
+    structuring: {
+      async structure() {
+        throw modelNotReadyError()
+      },
+    },
+  }
+}
 
 const ENCOUNTER = "00000000-0000-4000-8000-000000000001"
 const dirs: string[] = []
@@ -164,7 +182,7 @@ describe("createNotesService", () => {
     })
     const generated = await notes.generate(encounterId)
     expect((await repository.getById(encounterId))?.status).toBe("transcribed")
-    await notes.save({ encounterId, note: generated.note })
+    await notes.save({ encounterId, note: generated.note, clinicianConfirmed: true })
     expect((await repository.getById(encounterId))?.status).toBe("drafted")
   })
 
@@ -178,10 +196,102 @@ describe("createNotesService", () => {
       notes: store,
     })
     const generated = await notes.generate(encounterId)
-    const saved = await notes.save({ encounterId, note: generated.note })
+    const saved = await notes.save({
+      encounterId,
+      note: generated.note,
+      clinicianConfirmed: true,
+    })
     const stored = await store.get(saved.noteId)
     expect(stored?.encounterId).toBe(encounterId)
     expect(stored?.note).toEqual(generated.note)
     expect(stored?.transcript).toHaveLength(3)
+    expect(stored?.transcript).toEqual(generated.transcript)
+  })
+
+  it("rejects save without clinician confirmation", async () => {
+    const notes = createNotesService({
+      transcription: createMockTranscription(),
+      structuring: createMockStructuring(),
+    })
+    await notes.generate(ENCOUNTER)
+    await expect(
+      notes.save({
+        encounterId: ENCOUNTER,
+        note: syntheticClinicalNote(),
+        clinicianConfirmed: false as never,
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" })
+  })
+
+  it("rejects save for a missing encounter", async () => {
+    let present = true
+    const notes = createNotesService({
+      transcription: createMockTranscription(),
+      structuring: createMockStructuring(),
+      encounters: {
+        async start() {
+          return { encounterId: ENCOUNTER, startedAt: "" }
+        },
+        async stop() {
+          return { status: "recording" as const }
+        },
+        async getById() {
+          if (!present) return undefined
+          return {
+            id: ENCOUNTER,
+            status: "transcribed",
+            createdAt: "",
+            startedAt: "",
+            endedAt: "",
+            updatedAt: "",
+            completedAt: null,
+            transcriptId: null,
+            label: "",
+            visitType: "",
+          }
+        },
+        async advance() {},
+      },
+    })
+    const generated = await notes.generate(ENCOUNTER)
+    present = false
+    await expect(
+      notes.save({
+        encounterId: ENCOUNTER,
+        note: generated.note,
+        clinicianConfirmed: true,
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_STATE_TRANSITION" })
+  })
+
+  it("rejects save without a prior generate", async () => {
+    const notes = createNotesService({
+      transcription: createMockTranscription(),
+      structuring: createMockStructuring(),
+    })
+    await expect(
+      notes.save({
+        encounterId: ENCOUNTER,
+        note: syntheticClinicalNote(),
+        clinicianConfirmed: true,
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_STATE_TRANSITION" })
+  })
+
+  it("rejects save when the note cites a missing draft segment", async () => {
+    const notes = createNotesService({
+      transcription: createMockTranscription(),
+      structuring: createMockStructuring(),
+    })
+    await notes.generate(ENCOUNTER)
+    const broken = syntheticClinicalNote()
+    broken.sections.visit_context.sourceSegmentIds = ["missing"]
+    await expect(
+      notes.save({
+        encounterId: ENCOUNTER,
+        note: broken,
+        clinicianConfirmed: true,
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_STRUCTURED_OUTPUT" })
   })
 })

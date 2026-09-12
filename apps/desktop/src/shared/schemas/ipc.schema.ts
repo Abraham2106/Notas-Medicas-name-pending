@@ -50,6 +50,7 @@ export const saveNoteInputSchema = z
   .object({
     encounterId: z.string().uuid(),
     note: clinicalNoteSchema,
+    clinicianConfirmed: z.literal(true),
   })
   .strict()
 

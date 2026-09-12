@@ -5,8 +5,7 @@ import { afterEach, describe, expect, it } from "vitest"
 import { composeApplication } from "./compose-application"
 import { createSilentIpcLogger } from "../ipc/withValidation"
 import { createAudioTempStore } from "../audio"
-import { createFakeSttEngine } from "../stt/fake-stt.engine"
-import { createTranscriptionFromStt } from "../stt/file-transcription"
+import { createMockTranscription } from "../inference/mock"
 import { createHeuristicStructuring } from "../structure/heuristic-structuring"
 import { createMemoryNoteStore } from "../storage/memory.store"
 
@@ -29,7 +28,7 @@ describe("composeApplication", () => {
       audio,
       notesStore,
       exportDir,
-      transcription: createTranscriptionFromStt(createFakeSttEngine()),
+      transcription: createMockTranscription(),
       structuring: createHeuristicStructuring(),
     })
 
@@ -48,6 +47,7 @@ describe("composeApplication", () => {
     const saved = await app.notes.save({
       encounterId: started.encounterId,
       note: generated.note,
+      clinicianConfirmed: true,
     })
     const stored = await notesStore.get(saved.noteId)
     expect(stored?.encounterId).toBe(started.encounterId)

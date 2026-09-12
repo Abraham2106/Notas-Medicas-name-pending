@@ -12,6 +12,7 @@ export type NotesPort = {
   save: (input: {
     encounterId: string
     note: ClinicalNote
+    clinicianConfirmed: true
   }) => Promise<{ noteId: string }>
 }
 

@@ -71,7 +71,7 @@ describe("adaptOiraApi", () => {
     await bridge.stopEncounter(encounterId)
     const generated = await bridge.generateNote(encounterId)
     expect(Object.keys(generated.note.sections).sort()).toEqual([...SECTION_IDS].sort())
-    await bridge.saveNote(encounterId, generated.note)
+    await bridge.saveNote(encounterId, generated.note, true)
     await bridge.exportNote(encounterId, "txt")
     await bridge.writeClipboard("preview")
     await bridge.appendAudio({ encounterId, sequence: 0, pcm: [0, 0] })

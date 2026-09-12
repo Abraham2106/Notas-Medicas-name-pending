@@ -22,6 +22,22 @@ export function noteSaveNotImplementedError(): AppError {
   )
 }
 
+export function clinicianConfirmationRequiredError(): AppError {
+  return createAppError(
+    "INVALID_INPUT",
+    "Clinician confirmation is required before saving a note.",
+    { retryable: false },
+  )
+}
+
+export function noteDraftRequiredError(): AppError {
+  return createAppError(
+    "INVALID_STATE_TRANSITION",
+    "Generate a note before saving it.",
+    { retryable: false },
+  )
+}
+
 export function invalidStructuredOutputError(
   message = "The structured note did not match the required schema.",
 ): AppError {

@@ -156,7 +156,7 @@ export function App() {
         reviewConfirmed
       ) {
         event.preventDefault()
-        void encounter.acceptNote()
+        void encounter.acceptNote(true)
       }
     }
     window.addEventListener("keydown", onKey)
@@ -342,7 +342,7 @@ export function App() {
             onToggleReviewed={encounter.toggleReviewed}
             onFocusSection={focusSection}
             onJumpToSource={jumpToSource}
-            onAccept={() => void encounter.acceptNote()}
+            onAccept={() => void encounter.acceptNote(true)}
             onExport={() => void copyPreview()}
           />
         ) : null}

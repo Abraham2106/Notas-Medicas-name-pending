@@ -29,8 +29,8 @@ export function adaptOiraApi(api: OiraApi): DemoBridge {
     async generateNote(encounterId) {
       return unwrap(api.generateNote({ encounterId }))
     },
-    async saveNote(encounterId, note: ClinicalNote) {
-      await unwrap(api.saveNote({ encounterId, note }))
+    async saveNote(encounterId, note: ClinicalNote, clinicianConfirmed: true) {
+      await unwrap(api.saveNote({ encounterId, note, clinicianConfirmed }))
     },
     async exportNote(encounterId, format = "txt") {
       return unwrap(api.exportNote({ encounterId, format }))

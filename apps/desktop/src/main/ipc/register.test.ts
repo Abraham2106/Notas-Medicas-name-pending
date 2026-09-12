@@ -3,6 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 import { IPC_CHANNELS } from "../../shared/constants/ipc-channels"
+import { syntheticClinicalNote } from "../../shared/fixtures/synthetic-consult"
 import type { InferenceProgress } from "../../shared/types/inference-progress"
 import { createAuthStub } from "../auth"
 import { createAudioTempStore } from "../audio"
@@ -212,5 +213,51 @@ describe("I04 registerIpc", () => {
     }
     expect(session.ok).toBe(true)
     expect(session.data?.authenticated).toBe(false)
+  })
+
+  it("rejects SAVE_NOTE without clinician confirmation", async () => {
+    const ipc = createMemoryIpc()
+    registerIpc(ipc.handle, createStubIpcDeps())
+    const result = await ipc.invoke(IPC_CHANNELS.SAVE_NOTE, {
+      encounterId: "00000000-0000-4000-8000-000000000001",
+      note: syntheticClinicalNote(),
+    }) as { ok: boolean; error?: { code: string } }
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "INVALID_INPUT" }),
+    })
+  })
+
+  it("rejects SAVE_NOTE without a generated draft", async () => {
+    const ipc = createMemoryIpc()
+    registerIpc(ipc.handle, createStubIpcDeps())
+    const started = await ipc.invoke(IPC_CHANNELS.START_ENCOUNTER, {}) as {
+      data: { encounterId: string }
+    }
+    const result = await ipc.invoke(IPC_CHANNELS.SAVE_NOTE, {
+      encounterId: started.data.encounterId,
+      note: syntheticClinicalNote(),
+      clinicianConfirmed: true,
+    }) as { ok: boolean; error?: { code: string } }
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "INVALID_STATE_TRANSITION" }),
+    })
+  })
+
+  it("rejects EXPORT_NOTE when the encounter has no accepted note", async () => {
+    const ipc = createMemoryIpc()
+    registerIpc(ipc.handle, createStubIpcDeps())
+    const started = await ipc.invoke(IPC_CHANNELS.START_ENCOUNTER, {}) as {
+      data: { encounterId: string }
+    }
+    const result = await ipc.invoke(IPC_CHANNELS.EXPORT_NOTE, {
+      encounterId: started.data.encounterId,
+      format: "txt",
+    }) as { ok: boolean; error?: { code: string } }
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "EXPORT_FAILED" }),
+    })
   })
 })

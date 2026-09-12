@@ -22,6 +22,7 @@ describe("errors/notes", () => {
       notes.save({
         encounterId,
         note: syntheticClinicalNote(),
+        clinicianConfirmed: true,
       }),
     ).rejects.toMatchObject({ code: "NOT_IMPLEMENTED" })
   })

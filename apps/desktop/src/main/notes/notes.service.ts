@@ -1,9 +1,13 @@
 import { runGenerateNote } from "../application/generate-note"
 import { encounterNotFoundError } from "../errors/encounters"
 import {
+  clinicianConfirmationRequiredError,
+  invalidStructuredOutputError,
   noteGenerationNotImplementedError,
+  noteDraftRequiredError,
   noteSaveNotImplementedError,
 } from "../errors/notes"
+import { verifySource } from "./verify-source"
 import type { EncounterPort, NotesPort } from "../ports/inbound"
 import type {
   AudioCapturePort,
@@ -60,6 +64,9 @@ export function createNotesService(deps: NotesPipelineDeps): NotesPort {
       return generated
     },
     async save(input) {
+      if (input.clinicianConfirmed !== true) {
+        throw clinicianConfirmationRequiredError()
+      }
       const record = deps.encounters
         ? await deps.encounters.getById(input.encounterId)
         : undefined
@@ -67,6 +74,10 @@ export function createNotesService(deps: NotesPipelineDeps): NotesPort {
 
       const noteId = createId()
       const draft = drafts.get(input.encounterId)
+      if (!draft) throw noteDraftRequiredError()
+      if (!verifySource(input.note, draft.transcript)) {
+        throw invalidStructuredOutputError()
+      }
       if (deps.notes) {
         await deps.notes.save({
           id: noteId,
@@ -75,11 +86,11 @@ export function createNotesService(deps: NotesPipelineDeps): NotesPort {
           label: record?.label ?? "",
           visitType: record?.visitType ?? "",
           note: input.note,
-          transcript: draft?.transcript ?? [],
+          transcript: draft.transcript,
         })
       }
       drafts.set(input.encounterId, {
-        transcript: draft?.transcript ?? [],
+        transcript: draft.transcript,
         note: input.note,
       })
       await settleDrafted(deps.encounters, input.encounterId)
