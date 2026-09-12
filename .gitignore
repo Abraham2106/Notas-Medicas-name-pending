@@ -2,5 +2,6 @@ monorepo-explanation/
 node_modules/
 dist/
 out/
+apps/desktop/src/models/
 *.tsbuildinfo
 .DS_Store

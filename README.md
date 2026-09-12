@@ -314,10 +314,10 @@ Reglas de representación:
 
 | Pieza | Default P0 | Notas |
 |---|---|---|
-| STT | `WHISPER_SMALL_Q8_0` | Multilingüe con `language: "es"`. No hay small fine-tuneado solo a español. |
+| STT | `WHISPER_LARGE_V3_TURBO` | Multilingüe con `language: "es"`; mismo descriptor de Whisper Turbo usado en Albatross. |
 | Estructuración | Heurística + glosario | Determinística. Valida schema clínico y `sourceSegmentIds` con independencia del motor. |
 | LLM | `QWEN3_600M_INST_Q4` | Constante de catálogo. Planeado; no se carga ni se usa en runtime. |
-| Modelos grandes | No se cargan | 1.7B / 4B y Whisper large quedan fuera del catálogo P0 por consumo de RAM. |
+| Modelos grandes | No se cargan en paralelo | Whisper Turbo es el único modelo de inferencia cargado; 1.7B / 4B y Parakeet permanecen fuera por consumo de RAM. |
 | Diarización | No en P0 | `speaker` queda `null` hasta una asignación humana. |
 | Fallback cloud | Prohibido | Un fallo se muestra; no se reenvía audio a una API. |
 
