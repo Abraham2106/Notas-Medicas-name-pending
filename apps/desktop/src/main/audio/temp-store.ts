@@ -7,7 +7,7 @@ import {
   audioTooLargeError,
 } from "../errors/audio"
 import { safeJoin } from "./safe-path"
-import { encodeWavPcm16le } from "./wav"
+import { encodeWavPcm16le, preparePcmForWhisper } from "./wav"
 
 const PCM_NAME = "capture.pcm"
 const WAV_NAME = "capture.wav"
@@ -65,7 +65,7 @@ export function createAudioTempStore(options: {
         return null
       }
       // P0: the 200 MB cap is also the in-memory encode budget (read PCM → WAV).
-      const wav = encodeWavPcm16le(fs.readFileSync(pcmPath))
+      const wav = encodeWavPcm16le(preparePcmForWhisper(fs.readFileSync(pcmPath)))
       const wavFile = safeJoin(dir, WAV_NAME)
       fs.writeFileSync(wavFile, wav, { mode: 0o600 })
       fs.unlinkSync(pcmPath)

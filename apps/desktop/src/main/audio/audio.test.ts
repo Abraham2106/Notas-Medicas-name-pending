@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 import { createAudioTempStore } from "./temp-store"
 import { safeJoin } from "./safe-path"
-import { encodeWavPcm16le, isWavPcm16leMono16k } from "./wav"
+import { encodeWavPcm16le, isWavPcm16leMono16k, preparePcmForWhisper } from "./wav"
 
 const dirs: string[] = []
 
@@ -54,6 +54,17 @@ describe("WAV PCM 16 kHz", () => {
     expect(wav.readUInt16LE(34)).toBe(16)
     expect(isWavPcm16leMono16k(wav)).toBe(true)
     expect(isWavPcm16leMono16k(pcm)).toBe(false)
+  })
+
+  it("trims silence and normalizes quiet speech without changing PCM format", () => {
+    const samples = new Int16Array(10_000)
+    samples[5_000] = 1_000
+    samples[5_001] = 1_000
+    const prepared = preparePcmForWhisper(Buffer.from(samples.buffer))
+
+    expect(prepared.length).toBe((2 + 2 * 3_200) * 2)
+    expect(prepared.readInt16LE(3_200 * 2)).toBe(8_000)
+    expect(prepared.length % 2).toBe(0)
   })
 })
 

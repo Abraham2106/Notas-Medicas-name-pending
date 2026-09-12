@@ -65,10 +65,14 @@ export async function startMicCapture(options: {
   mute.gain.value = 0
   processor.connect(mute)
   mute.connect(audioContext.destination)
+  // Electron can leave a newly-created context suspended even when this was
+  // initiated by a click. Without resuming it, ScriptProcessor emits no PCM.
+  await audioContext.resume()
 
   return {
     async stop() {
-      await new Promise((resolve) => setTimeout(resolve, 200))
+      // Let the final audio callback arrive before severing the graph.
+      await new Promise((resolve) => setTimeout(resolve, 300))
       processor.disconnect()
       await audioContext.close()
       mediaStream.getTracks().forEach((track) => track.stop())
